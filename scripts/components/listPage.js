@@ -1,87 +1,106 @@
-export function renderListPage(container, list) {
-    const html = `
-        <div class="header">
-            <button class="button back-button">Назад</button>
-            <h1>${list.name}</h1>
-        </div>
-        <ul class="words-list">
-            ${list.words.map((word, index) => `
-                <li class="list-item word-item" data-index="${index}">
-                    <span>${word.side1} - ${word.side2}</span>
-                </li>
-            `).join('')}
-        </ul>
-        <button class="button repeat-button">Повторить</button>
-        <button class="fab add-word-button">+</button>
-    `;
-    
-    container.innerHTML = html;
+import app from '../main.js';
 
-    setupListPageListeners(container, list);
-}
+export const listPage = {
+    render() {
+      const container = document.createElement('div');
+      container.innerHTML = `
+        <h1>${app.currentList.name}
+          ${app.isSelectMode ? `
+            <button id="deleteSelected">Удалить</button>
+            <button id="repeatSelected">Повторить</button>
+            <button id="exitSelectMode">Выйти из режима выбора</button>
+          ` : `
+            <button id="selectMode">Выбрать</button>
+          `}
+        </h1>
+        <ul id="wordContainer"></ul>
+        <button id="addWord">+ слово</button>
+        <button id="repeatAll">Повторить все</button>
+        <button id="back">Назад</button>
+      `;
 
-function setupListPageListeners(container, list) {
-    container.querySelector('.back-button').addEventListener('click', () => {
-        app.currentPage = 'main';
-        app.currentList = null;
-        app.renderPage();
+    const wordContainer = container.querySelector('#wordContainer');
+    app.currentList.words.forEach(word => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        ${app.isSelectMode ? `<input type="checkbox" class="selectItem" data-id="${word.id}">` : ''}
+        <span class="wordSide1">${word.side1}</span> - <span class="wordSide2">${word.side2}</span>
+        ${!app.isSelectMode ? `
+          <button class="editWord" data-id="${word.id}">Edit</button>
+          <button class="deleteWord" data-id="${word.id}">Delete</button>
+        ` : ''}
+      `;
+      wordContainer.appendChild(li);
     });
 
-    container.querySelectorAll('.word-item').forEach(item => {
-        item.addEventListener('click', (e) => {
-            const index = e.currentTarget.dataset.index;
-            app.currentWord = list.words[index];
-            app.currentWordIndex = index;
-            app.currentPage = 'word';
-            app.renderPage();
+    this.setupListeners(container);
+    return container;
+  },
+
+  setupListeners(container) {
+    container.querySelector('#addWord').addEventListener('click', () => {
+      app.currentWord = null;
+      app.navigateTo('word');
+    });
+
+    container.querySelector('#repeatAll').addEventListener('click', () => {
+        app.startRepeat(app.currentList.words);
+      });
+
+    container.querySelector('#back').addEventListener('click', () => {
+      app.navigateTo('main');
+    });
+
+    const selectModeButton = container.querySelector('#selectMode');
+    if (selectModeButton) {
+      selectModeButton.addEventListener('click', () => {
+        app.toggleSelectMode();
+      });
+    }
+
+    if (app.isSelectMode) {
+      container.querySelector('#deleteSelected').addEventListener('click', () => {
+        if (confirm('Вы уверены, что хотите удалить выбранные слова?')) {
+          app.deleteSelectedItems();
+        }
+      });
+
+      container.querySelector('#repeatSelected').addEventListener('click', () => {
+        const selectedWords = app.selectedItems.filter(item => item.side1 && item.side2);
+        app.startRepeat(selectedWords);
+      });
+
+      container.querySelectorAll('.selectItem').forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+          const wordId = parseInt(e.target.dataset.id);
+          const word = app.currentList.words.find(w => w.id === wordId);
+          app.toggleItemSelection(word);
         });
-    });
+      });
 
-    container.querySelector('.add-word-button').addEventListener('click', () => {
-        app.currentWord = { side1: '', side2: '', example: '' };
-        app.currentWordIndex = -1;
-        app.currentPage = 'word';
+      container.querySelector('#exitSelectMode').addEventListener('click', () => {
+        app.isSelectMode = false;
+        app.selectedItems = [];
         app.renderPage();
-    });
+      });
+      
+    } else {
+      container.querySelectorAll('.editWord').forEach(button => {
+        button.addEventListener('click', (e) => {
+          const wordId = parseInt(e.target.dataset.id);
+          app.currentWord = app.currentList.words.find(w => w.id === wordId);
+          app.navigateTo('word');
+        });
+      });
 
-    container.querySelector('.repeat-button').addEventListener('click', () => {
-        showRepeatSettings(list);
-    });
-}
-
-function showRepeatSettings(list) {
-    const settingsHtml = `
-        <div class="repeat-settings-overlay">
-            <div class="repeat-settings">
-                <h2>Настройки повторения</h2>
-                <div>
-                    <label>Сторона:</label>
-                    <select id="side-select">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="mix">Перемешать</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Порядок слов:</label>
-                    <select id="order-select">
-                        <option value="order">По порядку</option>
-                        <option value="shuffle">Перемешать</option>
-                    </select>
-                </div>
-                <button class="button start-repeat-button">Начать</button>
-            </div>
-        </div>
-    `;
-
-    const settingsContainer = document.createElement('div');
-    settingsContainer.innerHTML = settingsHtml;
-    document.body.appendChild(settingsContainer);
-
-    settingsContainer.querySelector('.start-repeat-button').addEventListener('click', () => {
-        const side = document.getElementById('side-select').value;
-        const order = document.getElementById('order-select').value;
-        document.body.removeChild(settingsContainer);
-        app.startRepeat(list, side, order);
-    });
-}
+      container.querySelectorAll('.deleteWord').forEach(button => {
+        button.addEventListener('click', (e) => {
+          const wordId = parseInt(e.target.dataset.id);
+          if (confirm('Вы уверены, что хотите удалить это слово?')) {
+            app.deleteWord(wordId);
+          }
+        });
+      });
+    }
+  }
+};

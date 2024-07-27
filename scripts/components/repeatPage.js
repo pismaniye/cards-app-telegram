@@ -1,47 +1,65 @@
-export function renderRepeatPage(container, list, settings) {
+import app from '../main.js';
+
+export const repeatPage = {
+  render() {
+    const container = document.createElement('div');
     const currentWord = app.getCurrentWord();
-    const showingAnswer = app.showingAnswer;
-    const html = `
-        <div class="header">
-            <button class="button back-button">Назад</button>
-            <h1>Повторение</h1>
-        </div>
-        <div class="card">
-            <div class="card-content">${getCurrentSide(currentWord, settings.side, showingAnswer)}</div>
-        </div>
-        <div class="button-container">
-            <button class="button answer-button">Ответ</button>
-            <button class="button remember-button">Помню</button>
-        </div>
-    `;
     
-    container.innerHTML = html;
-
-    setupRepeatPageListeners(container);
-}
-
-function getCurrentSide(word, side, showingAnswer) {
-    if (showingAnswer) {
-        return `${word.side1} - ${word.side2}`;
+    if (!currentWord) {
+      container.innerHTML = `
+        <div class="header">
+          <button class="button back-button">Назад</button>
+          <h1>Повторение завершено</h1>
+        </div>
+        <p>Вы повторили все слова в этом списке.</p>
+      `;
+      this.setupListeners(container);
+      return container;
     }
-    if (side === 'mix') {
-        return Math.random() < 0.5 ? word.side1 : word.side2;
-    }
-    return side === '1' ? word.side1 : word.side2;
-}
+    
+    const showingAnswer = app.showingAnswer;
+    
+    container.innerHTML = `
+      <div class="header">
+        <button class="button back-button">Назад</button>
+        <h1>Повторение</h1>
+      </div>
+      <div class="card">
+        <div class="card-content">${showingAnswer ? `${currentWord.question} - ${currentWord.answer}` : currentWord.question}</div>
+      </div>
+      <div class="button-container">
+        <button class="button answer-button">${showingAnswer ? 'Следующее слово' : 'Показать ответ'}</button>
+        ${!showingAnswer ? '<button class="button remember-button">Помню</button>' : ''}
+      </div>
+    `;
 
-function setupRepeatPageListeners(container) {
+    this.setupListeners(container);
+    return container;
+  },
+
+  setupListeners(container) {
     container.querySelector('.back-button').addEventListener('click', () => {
-        app.currentPage = 'list';
-        app.showingAnswer = false;
+      app.navigateTo('list');
+    });
+
+    const answerButton = container.querySelector('.answer-button');
+    if (answerButton) {
+      answerButton.addEventListener('click', () => {
+        if (app.showingAnswer) {
+          app.nextWord();
+        } else {
+          app.showAnswer();
+        }
         app.renderPage();
-    });
+      });
+    }
 
-    container.querySelector('.answer-button').addEventListener('click', () => {
-        app.showAnswer();
-    });
-
-    container.querySelector('.remember-button').addEventListener('click', () => {
+    const rememberButton = container.querySelector('.remember-button');
+    if (rememberButton) {
+      rememberButton.addEventListener('click', () => {
         app.nextWord();
-    });
-}
+        app.renderPage();
+      });
+    }
+  }
+};
