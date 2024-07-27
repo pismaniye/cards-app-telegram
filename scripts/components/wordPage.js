@@ -8,13 +8,17 @@ export const wordPage = {
     
     container.innerHTML = `
       <div class="header">
-        <button class="button back-button">Назад</button>
         <h1>${isNewWord ? 'Новое слово' : 'Редактировать слово'}</h1>
+        <button class="button back-button">Назад</button>
       </div>
-      <div class="word-form">
-        <input type="text" id="side1" placeholder="Сторона 1" value="${word ? word.side1 || '' : ''}">
-        <input type="text" id="side2" placeholder="Сторона 2" value="${word ? word.side2 || '' : ''}">
-        <input type="text" id="example" placeholder="Пример (опционально)" value="${word ? word.example || '' : ''}">
+      <div class="card">
+        <div class="word-form">
+          <input type="text" id="side1" placeholder="Сторона 1" value="${word ? word.side1 || '' : ''}">
+          <input type="text" id="side2" placeholder="Сторона 2" value="${word ? word.side2 || '' : ''}">
+          <input type="text" id="example" placeholder="Пример (опционально)" value="${word ? word.example || '' : ''}">
+        </div>
+      </div>
+      <div class="button-container">
         <button class="button save-word-button">Сохранить</button>
       </div>
     `;
