@@ -3,6 +3,8 @@ import { listPage } from './components/listPage.js';
 import { wordPage } from './components/wordPage.js';
 import { repeatPage } from './components/repeatPage.js';
 
+const tg = window.Telegram.WebApp;
+
 const app = {
   currentPage: 'main',
   lists: [],
@@ -16,8 +18,36 @@ const app = {
   repeatSettings: { side: '1', order: 'sequential' },
 
   init() {
+    tg.ready();
     this.loadData();
     this.renderPage();
+    this.setupTelegramBackButton();
+  },
+
+  setupTelegramBackButton() {
+    tg.BackButton.onClick(() => {
+      if (this.currentPage === 'main') {
+        tg.close();
+      } else {
+        this.navigateTo('main');
+      }
+    });
+  },
+
+  navigateTo(page) {
+    this.currentPage = page;
+    this.isSelectMode = false;
+    this.selectedItems = [];
+    this.renderPage();
+    this.updateTelegramBackButton();
+  },
+
+  updateTelegramBackButton() {
+    if (this.currentPage === 'main') {
+      tg.BackButton.hide();
+    } else {
+      tg.BackButton.show();
+    }
   },
 
   renderPage() {
