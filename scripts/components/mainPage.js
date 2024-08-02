@@ -19,11 +19,11 @@ export const mainPage = {
         ${app.isSelectMode ? `
           <button class="button" id="deleteSelected">Удалить</button>
           <button class="button" id="repeatSelected">Повторить выбранное</button>
-          <button class="button" id="repeatAll">Повторить все</button>
         ` : `
           <button class="button" id="addList">+ Добавить список</button>
         `}
       </div>
+      <div id="errorContainer" class="error-container"></div>
     `;
 
     const listContainer = container.querySelector('#listContainer');
@@ -53,9 +53,15 @@ export const mainPage = {
   setupListeners(container) {
     const addListButton = container.querySelector('#addList');
     if (addListButton) {
-      addListButton.addEventListener('click', () => {
+      addListButton.addEventListener('click', async () => {
         const name = prompt('Введите название списка:');
-        if (name) app.addList(name);
+        if (name) {
+          try {
+            await app.addList(name);
+          } catch (error) {
+            this.showError(container, 'Ошибка при добавлении списка: ' + error.message);
+          }
+        }
       });
     }
 
@@ -76,9 +82,13 @@ export const mainPage = {
     if (app.isSelectMode) {
       const deleteSelectedButton = container.querySelector('#deleteSelected');
       if (deleteSelectedButton) {
-        deleteSelectedButton.addEventListener('click', () => {
+        deleteSelectedButton.addEventListener('click', async () => {
           if (confirm('Вы уверены, что хотите удалить выбранные списки?')) {
-            app.deleteSelectedItems();
+            try {
+              await app.deleteSelectedItems();
+            } catch (error) {
+              this.showError(container, 'Ошибка при удалении выбранных списков: ' + error.message);
+            }
           }
         });
       }
@@ -87,14 +97,6 @@ export const mainPage = {
       if (repeatSelectedButton) {
         repeatSelectedButton.addEventListener('click', () => {
           app.startRepeatForSelectedItems();
-        });
-      }
-
-      const repeatAllButton = container.querySelector('#repeatAll');
-      if (repeatAllButton) {
-        repeatAllButton.addEventListener('click', () => {
-          const allWords = app.lists.flatMap(list => list.words);
-          app.startRepeat(allWords);
         });
       }
 
@@ -110,31 +112,45 @@ export const mainPage = {
       });
     } else {
       container.querySelectorAll('.listName').forEach(span => {
-        span.addEventListener('click', (e) => {
+        span.addEventListener('click', async (e) => {
           const listId = parseInt(e.target.dataset.id);
           const list = app.lists.find(l => l.id === listId);
           if (list) {
             app.currentList = list;
-            app.navigateTo('list');
+            try {
+              await app.navigateTo('list');
+            } catch (error) {
+              this.showError(container, 'Ошибка при переходе к списку: ' + error.message);
+            }
           } else {
-            console.error('Список не найден');
+            this.showError(container, 'Список не найден');
           }
         });
       });
 
       container.querySelectorAll('.editList').forEach(button => {
-        button.addEventListener('click', (e) => {
+        button.addEventListener('click', async (e) => {
           const listId = parseInt(e.target.dataset.id);
           const newName = prompt('Введите новое название списка:');
-          if (newName) app.updateList(listId, newName);
+          if (newName) {
+            try {
+              await app.updateList(listId, newName);
+            } catch (error) {
+              this.showError(container, 'Ошибка при обновлении списка: ' + error.message);
+            }
+          }
         });
       });
 
       container.querySelectorAll('.deleteList').forEach(button => {
-        button.addEventListener('click', (e) => {
+        button.addEventListener('click', async (e) => {
           const listId = parseInt(e.target.dataset.id);
           if (confirm('Вы уверены, что хотите удалить этот список?')) {
-            app.deleteList(listId);
+            try {
+              await app.deleteList(listId);
+            } catch (error) {
+              this.showError(container, 'Ошибка при удалении списка: ' + error.message);
+            }
           }
         });
       });
@@ -147,5 +163,14 @@ export const mainPage = {
       const isSelected = app.selectedItems.some(item => item.id === listId);
       checkbox.checked = isSelected;
     });
+  },
+
+  showError(container, message) {
+    const errorContainer = container.querySelector('#errorContainer');
+    errorContainer.textContent = message;
+    errorContainer.style.display = 'block';
+    setTimeout(() => {
+      errorContainer.style.display = 'none';
+    }, 3000);
   }
 };

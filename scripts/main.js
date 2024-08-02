@@ -2,8 +2,20 @@ import { mainPage } from './components/mainPage.js';
 import { listPage } from './components/listPage.js';
 import { wordPage } from './components/wordPage.js';
 import { repeatPage } from './components/repeatPage.js';
+import { database, auth, signInAnonymously } from './firebase.js';
+import { ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
-const tg = window.Telegram.WebApp;
+// Создаем заглушку для объекта Telegram.WebApp
+const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : {
+  initDataUnsafe: { user: { id: 'local_user' } },
+  BackButton: {
+    show: () => console.log('Show back button'),
+    hide: () => console.log('Hide back button'),
+    onClick: (callback) => console.log('Set back button callback')
+  },
+  ready: () => console.log('Telegram WebApp ready'),
+  close: () => console.log('Close WebApp')
+};
 
 const app = {
   currentPage: 'main',
@@ -17,11 +29,26 @@ const app = {
   showingAnswer: false,
   repeatSettings: { side: '1', order: 'sequential' },
 
-  init() {
-    tg.ready();
-    this.loadData();
-    this.renderPage();
-    this.setupTelegramBackButton();
+  async init() {
+    try {
+      await this.authenticateAnonymously();
+      await this.loadData();
+      this.renderPage();
+      this.setupTelegramBackButton();
+    } catch (error) {
+      console.error('Ошибка при инициализации приложения:', error);
+      // Показать пользователю сообщение об ошибке
+    }
+  },
+
+  async authenticateAnonymously() {
+    try {
+      await signInAnonymously(auth);
+      console.log('Анонимная аутентификация успешна');
+    } catch (error) {
+      console.error('Ошибка при анонимной аутентификации:', error);
+      throw error;
+    }
   },
 
   setupTelegramBackButton() {
@@ -34,11 +61,11 @@ const app = {
     });
   },
 
-  navigateTo(page) {
+  async navigateTo(page) {
     this.currentPage = page;
     this.isSelectMode = false;
     this.selectedItems = [];
-    this.renderPage();
+    await this.renderPage();
     this.updateTelegramBackButton();
   },
 
@@ -50,7 +77,7 @@ const app = {
     }
   },
 
-  renderPage() {
+  async renderPage() {
     const container = document.getElementById('app');
     container.innerHTML = '';
 
@@ -70,13 +97,6 @@ const app = {
     }
   },
 
-  navigateTo(page) {
-    this.currentPage = page;
-    this.isSelectMode = false;
-    this.selectedItems = [];
-    this.renderPage();
-  },
-
   toggleSelectMode() {
     this.isSelectMode = !this.isSelectMode;
     this.selectedItems = [];
@@ -93,7 +113,7 @@ const app = {
     this.renderPage();
   },
 
-  deleteSelectedItems() {
+  async deleteSelectedItems() {
     if (this.currentPage === 'main') {
       this.lists = this.lists.filter(list => !this.selectedItems.some(item => item.id === list.id));
     } else if (this.currentPage === 'list') {
@@ -101,8 +121,13 @@ const app = {
     }
     this.isSelectMode = false;
     this.selectedItems = [];
-    this.saveData();
-    this.renderPage();
+    try {
+      await this.saveData();
+      this.renderPage();
+    } catch (error) {
+      console.error('Ошибка при удалении выбранных элементов:', error);
+      // Показать пользователю сообщение об ошибке
+    }
   },
 
   startRepeatForSelectedItems() {
@@ -191,51 +216,11 @@ const app = {
     };
   },
 
-  // Обновите эти функции в объекте app в main.js
-
-startRepeat(words = this.currentList.words) {
-    this.showRepeatSettings(() => {
-      this.repeatWords = [...words];
-      this.shuffleWordsIfNeeded();
-      this.currentRepeatIndex = 0;
-      this.showingAnswer = false;
-      this.navigateTo('repeat');
-    });
-  },
-  
   shuffleWordsIfNeeded() {
     if (this.repeatSettings.order === 'random') {
       this.shuffleArray(this.repeatWords);
     }
   },
-  
-  getCurrentWord() {
-    const currentWord = this.repeatWords[this.currentRepeatIndex];
-    if (!currentWord) return null;
-  
-    let isReversed;
-    if (this.repeatSettings.side === 'mix') {
-      isReversed = Math.random() < 0.5;
-    } else {
-      isReversed = this.repeatSettings.side === '2';
-    }
-    
-    return {
-      question: isReversed ? currentWord.side2 : currentWord.side1,
-      answer: isReversed ? currentWord.side1 : currentWord.side2
-    };
-  },
-  
-  startRepeat(words = this.currentList.words) {
-    this.showRepeatSettings(() => {
-      this.repeatWords = [...words];
-      this.shuffleWordsIfNeeded();
-      this.currentRepeatIndex = 0;
-      this.showingAnswer = false;
-      this.navigateTo('repeat');
-    });
-  },
-  
   
   shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -260,76 +245,130 @@ startRepeat(words = this.currentList.words) {
     this.renderPage();
   },
 
-  saveData() {
+  async saveData() {
+    const userId = auth.currentUser ? auth.currentUser.uid : 'local_user';
     const data = {
       lists: this.lists,
       currentList: this.currentList ? this.currentList.id : null,
       currentWord: this.currentWord ? this.currentWord.id : null,
     };
-    localStorage.setItem('cardAppData', JSON.stringify(data));
-  },
-
-  loadData() {
-    const savedData = localStorage.getItem('cardAppData');
-    if (savedData) {
-      const data = JSON.parse(savedData);
-      this.lists = data.lists || [];
-      if (data.currentList) {
-        this.currentList = this.lists.find(list => list.id === data.currentList) || null;
-      }
-      if (this.currentList && data.currentWord) {
-        this.currentWord = this.currentList.words.find(word => word.id === data.currentWord) || null;
-      }
+    try {
+      await set(ref(database, 'users/' + userId), data);
+      console.log('Данные успешно сохранены');
+    } catch (error) {
+      console.error('Ошибка при сохранении данных:', error);
+      throw error;
     }
   },
 
-  addList(name) {
-    const newList = { id: Date.now(), name, words: [] };
-    this.lists.push(newList);
-    this.saveData();
-    this.renderPage();
+  async loadData() {
+    const userId = auth.currentUser ? auth.currentUser.uid : 'local_user';
+    await this.loadUserData(userId);
   },
 
-  updateList(listId, newName) {
+  async loadUserData(userId) {
+    try {
+      const snapshot = await get(ref(database, 'users/' + userId));
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        this.lists = data.lists || [];
+        if (data.currentList) {
+          this.currentList = this.lists.find(list => list.id === data.currentList) || null;
+        }
+        if (this.currentList && data.currentWord) {
+          this.currentWord = this.currentList.words.find(word => word.id === data.currentWord) || null;
+        }
+      } else {
+        console.log('Данные не найдены');
+        this.lists = [];
+        this.currentList = null;
+        this.currentWord = null;
+      }
+    } catch (error) {
+      console.error('Ошибка при загрузке данных:', error);
+      throw error;
+    }
+  },
+
+  async addList(name) {
+    const newList = { id: Date.now(), name, words: [] };
+    this.lists.push(newList);
+    try {
+      await this.saveData();
+      this.renderPage();
+    } catch (error) {
+      console.error('Ошибка при добавлении списка:', error);
+      // Показать пользователю сообщение об ошибке
+    }
+  },
+
+  async updateList(listId, newName) {
     const list = this.lists.find(l => l.id === listId);
     if (list) {
       list.name = newName;
-      this.saveData();
-      this.renderPage();
+      try {
+        await this.saveData();
+        this.renderPage();
+      } catch (error) {
+        console.error('Ошибка при обновлении списка:', error);
+        // Показать пользователю сообщение об ошибке
+      }
     }
   },
 
-  deleteList(listId) {
+  async deleteList(listId) {
     this.lists = this.lists.filter(l => l.id !== listId);
-    this.saveData();
-    this.renderPage();
+    try {
+      await this.saveData();
+      this.renderPage();
+    } catch (error) {
+      console.error('Ошибка при удалении списка:', error);
+      // Показать пользователю сообщение об ошибке
+    }
   },
 
-  addWord(side1, side2, example = '') {
+  async addWord(side1, side2, example = '') {
     const newWord = { id: Date.now(), side1, side2, example };
     this.currentList.words.push(newWord);
-    this.saveData();
-    this.renderPage();
+    try {
+      await this.saveData();
+      this.renderPage();
+    } catch (error) {
+      console.error('Ошибка при добавлении слова:', error);
+      // Показать пользователю сообщение об ошибке
+    }
   },
 
-  updateWord(wordId, side1, side2, example = '') {
+  async updateWord(wordId, side1, side2, example = '') {
     const word = this.currentList.words.find(w => w.id === wordId);
     if (word) {
       word.side1 = side1;
       word.side2 = side2;
       word.example = example;
-      this.saveData();
-      this.renderPage();
+      try {
+        await this.saveData();
+        this.renderPage();
+      } catch (error) {
+        console.error('Ошибка при обновлении слова:', error);
+        // Показать пользователю сообщение об ошибке
+      }
     }
   },
 
-  deleteWord(wordId) {
+  async deleteWord(wordId) {
     this.currentList.words = this.currentList.words.filter(w => w.id !== wordId);
-    this.saveData();
-    this.renderPage();
+    try {
+      await this.saveData();
+      this.renderPage();
+    } catch (error) {
+      console.error('Ошибка при удалении слова:', error);
+      // Показать пользователю сообщение об ошибке
+    }
   }
 };
 
-document.addEventListener('DOMContentLoaded', () => app.init());
+document.addEventListener('DOMContentLoaded', () => {
+  app.init();
+});
 
 export default app;

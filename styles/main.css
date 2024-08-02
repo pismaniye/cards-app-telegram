@@ -109,6 +109,17 @@ input[type="text"], input[type="checkbox"] {
     transform: scale(1.1);
 }
 
+/* Новые стили для обработки ошибок */
+.error-container {
+    display: none;
+    background-color: #ffcccc;
+    color: #cc0000;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 5px;
+    text-align: center;
+}
+
 @media (max-width: 600px) {
     #app {
         padding: 10px;
