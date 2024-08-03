@@ -17,6 +17,11 @@ const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : 
   close: () => console.log('Close WebApp')
 };
 
+// Функция для проверки поддержки BackButton
+function isBackButtonSupported() {
+  return tg.BackButton && typeof tg.BackButton.show === 'function';
+}
+
 const app = {
   currentPage: 'main',
   lists: [],
@@ -52,13 +57,17 @@ const app = {
   },
 
   setupTelegramBackButton() {
-    tg.BackButton.onClick(() => {
-      if (this.currentPage === 'main') {
-        tg.close();
-      } else {
-        this.navigateTo('main');
-      }
-    });
+    if (isBackButtonSupported()) {
+      tg.BackButton.onClick(() => {
+        if (this.currentPage === 'main') {
+          tg.close();
+        } else {
+          this.navigateTo('main');
+        }
+      });
+    } else {
+      console.log('Telegram BackButton не поддерживается в данной версии');
+    }
   },
 
   async navigateTo(page) {
@@ -70,10 +79,12 @@ const app = {
   },
 
   updateTelegramBackButton() {
-    if (this.currentPage === 'main') {
-      tg.BackButton.hide();
-    } else {
-      tg.BackButton.show();
+    if (isBackButtonSupported()) {
+      if (this.currentPage === 'main') {
+        tg.BackButton.hide();
+      } else {
+        tg.BackButton.show();
+      }
     }
   },
 
