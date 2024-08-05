@@ -186,9 +186,9 @@ export const mainPage = {
   },
 
   openList(listId) {
-    const list = app.lists.find(l => l.id === listId);
-    if (list) {
-      app.currentList = list;
+    console.log(`Opening list: ${listId}`);
+    app.setCurrentList(listId);
+    if (app.currentList) {
       app.navigateTo('list');
     } else {
       app.showError('Список не найден');

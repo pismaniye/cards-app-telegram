@@ -279,7 +279,13 @@ const app = {
       const data = await loadUserData();
       if (data) {
         console.log("Data loaded:", data);
-        this.lists = data.lists || [];
+        this.lists = Array.isArray(data.lists) ? data.lists : [];
+        // Убедимся, что у каждого списка есть свойство words и оно является массивом
+        this.lists.forEach(list => {
+          if (!Array.isArray(list.words)) {
+            list.words = [];
+          }
+        });
         if (data.currentList) {
           this.currentList = this.lists.find(list => list.id === data.currentList) || null;
         }
@@ -288,13 +294,16 @@ const app = {
         }
       } else {
         console.log("No data found, initializing with empty state");
+        this.lists = [];
+        this.currentList = null;
+        this.currentWord = null;
       }
     } catch (error) {
       console.error("Error in loadData:", error);
       this.handleError(error, 'Ошибка загрузки данных');
     }
   },
-
+  
   async addList(name) {
     console.log("Adding new list:", name);
     const newList = { id: Date.now(), name, words: [] };
@@ -309,6 +318,16 @@ const app = {
       this.lists.pop(); // Удаляем список из локального массива, если сохранение не удалось
     }
   },
+
+  // Добавим новый метод для установки текущего списка
+setCurrentList(listId) {
+  console.log("Setting current list:", listId);
+  this.currentList = this.lists.find(list => list.id === listId);
+  if (this.currentList && !Array.isArray(this.currentList.words)) {
+    this.currentList.words = [];
+  }
+  console.log("Current list set to:", this.currentList);
+},
 
   async updateList(listId, newName) {
     console.log(`Updating list ${listId} with new name: ${newName}`);
@@ -409,7 +428,7 @@ const app = {
       console.error('Элемент для отображения ошибок не найден');
       alert(message);
     }
-  }
+  },
 };
 
 document.addEventListener('DOMContentLoaded', () => {

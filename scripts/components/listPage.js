@@ -8,6 +8,8 @@ export const listPage = {
       return document.createElement('div');
     }
 
+    console.log('Rendering list page for list:', app.currentList);
+
     const container = document.createElement('div');
     container.innerHTML = `
       <div class="header">
@@ -32,21 +34,30 @@ export const listPage = {
     `;
 
     const wordContainer = container.querySelector('#wordContainer');
-    app.currentList.words.forEach(word => {
-      const li = document.createElement('li');
-      li.className = 'list-item';
-      li.dataset.id = word.id;
-      li.innerHTML = `
-        <div class="list-item-content">
-          ${app.isSelectMode ? `<input type="checkbox" class="selectItem" data-id="${word.id}">` : ''}
-          <span class="item-name">${word.side1} - ${word.side2}</span>
-        </div>
-      `;
-      wordContainer.appendChild(li);
-      if (!app.isSelectMode) {
-        this.setupLongPress(li);
+    if (Array.isArray(app.currentList.words)) {
+      if (app.currentList.words.length === 0) {
+        wordContainer.innerHTML = '<li>Список пуст. Добавьте новые слова.</li>';
+      } else {
+        app.currentList.words.forEach(word => {
+          const li = document.createElement('li');
+          li.className = 'list-item';
+          li.dataset.id = word.id;
+          li.innerHTML = `
+            <div class="list-item-content">
+              ${app.isSelectMode ? `<input type="checkbox" class="selectItem" data-id="${word.id}">` : ''}
+              <span class="item-name">${word.side1} - ${word.side2}</span>
+            </div>
+          `;
+          wordContainer.appendChild(li);
+          if (!app.isSelectMode) {
+            this.setupLongPress(li);
+          }
+        });
       }
-    });
+    } else {
+      console.error('app.currentList.words is not an array:', app.currentList.words);
+      wordContainer.innerHTML = '<li>Ошибка загрузки слов</li>';
+    }
 
     this.setupListeners(container);
     this.updateCheckboxes(container);
@@ -195,5 +206,15 @@ export const listPage = {
       const isSelected = app.selectedItems.some(item => item.id === wordId);
       checkbox.checked = isSelected;
     });
+  },
+
+  openList(listId) {
+    console.log(`Opening list: ${listId}`);
+    app.setCurrentList(listId);
+    if (app.currentList) {
+      app.navigateTo('list');
+    } else {
+      app.showError('Список не найден');
+    }
   }
 };
