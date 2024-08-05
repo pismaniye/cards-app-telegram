@@ -152,7 +152,7 @@ const app = {
   },
 
   startRepeat(words = this.currentList.words) {
-    console.log(`Starting repeat with ${words.length} words`);
+    console.log(`Начало повторения с ${words.length} словами`);
     this.showRepeatSettings(() => {
       this.repeatWords = [...words];
       if (this.repeatSettings.order === 'random') {
@@ -165,23 +165,23 @@ const app = {
   },
   
   showRepeatSettings(callback) {
-    console.log("Showing repeat settings");
+    console.log("Отображение настроек повторения");
     const settingsHtml = `
       <div id="repeatSettings" class="repeat-settings">
         <h2>Настройки повторения</h2>
         <div>
           <label>Сторона:</label>
           <select id="sideSelect">
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="mix">Перемешать</option>
+            <option value="1" ${this.repeatSettings.side === '1' ? 'selected' : ''}>1</option>
+            <option value="2" ${this.repeatSettings.side === '2' ? 'selected' : ''}>2</option>
+            <option value="mix" ${this.repeatSettings.side === 'mix' ? 'selected' : ''}>Перемешать</option>
           </select>
         </div>
         <div>
           <label>Порядок слов:</label>
           <select id="orderSelect">
-            <option value="sequential">По порядку</option>
-            <option value="random">Перемешать</option>
+            <option value="sequential" ${this.repeatSettings.order === 'sequential' ? 'selected' : ''}>По порядку</option>
+            <option value="random" ${this.repeatSettings.order === 'random' ? 'selected' : ''}>Перемешать</option>
           </select>
         </div>
         <button id="startRepeatBtn">Начать</button>

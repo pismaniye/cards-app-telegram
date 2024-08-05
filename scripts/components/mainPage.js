@@ -209,8 +209,6 @@ export const mainPage = {
       app.showError('Нет слов для повторения');
       return;
     }
-    app.showRepeatSettings(() => {
-      app.startRepeat(allWords);
-    });
+    app.startRepeat(allWords);
   }
 };
