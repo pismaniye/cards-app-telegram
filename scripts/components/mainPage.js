@@ -35,14 +35,10 @@ export const mainPage = {
           ${app.isSelectMode ? `<input type="checkbox" class="selectItem" data-id="${list.id}">` : ''}
           <span class="item-name">${list.name}</span>
         </div>
-        <div class="list-item-actions">
-          <button class="edit-btn">Редактировать</button>
-          <button class="delete-btn">Удалить</button>
-        </div>
       `;
       listContainer.appendChild(li);
       if (!app.isSelectMode) {
-        this.setupSwipe(li);
+        this.setupLongPress(li);
       }
     });
 
@@ -116,40 +112,55 @@ export const mainPage = {
     }
   },
 
-  setupSwipe(listItem) {
-    const hammer = new Hammer(listItem);
-    const content = listItem.querySelector('.list-item-content');
-    const actions = listItem.querySelector('.list-item-actions');
-    let isOpen = false;
+  setupLongPress(listItem) {
+    let pressTimer;
+    const itemName = listItem.querySelector('.item-name');
 
-    hammer.on('swipeleft swiperight', function(ev) {
-      if (ev.type === 'swipeleft' && !isOpen) {
-        content.style.transform = 'translateX(-100px)';
-        actions.style.transform = 'translateX(-100px)';
-        isOpen = true;
-      } else if (ev.type === 'swiperight' && isOpen) {
-        content.style.transform = 'translateX(0)';
-        actions.style.transform = 'translateX(0)';
-        isOpen = false;
-      }
+    itemName.addEventListener('touchstart', (e) => {
+      pressTimer = setTimeout(() => {
+        this.showContextMenu(listItem, e);
+      }, 500);
     });
 
-    const editBtn = listItem.querySelector('.edit-btn');
-    const deleteBtn = listItem.querySelector('.delete-btn');
-
-    editBtn.addEventListener('click', () => {
-      const listId = parseInt(listItem.dataset.id);
-      this.editList(listId);
+    itemName.addEventListener('touchend', () => {
+      clearTimeout(pressTimer);
     });
 
-    deleteBtn.addEventListener('click', () => {
-      const listId = parseInt(listItem.dataset.id);
-      this.deleteList(listId);
-    });
-
-    listItem.querySelector('.item-name').addEventListener('click', () => {
+    itemName.addEventListener('click', () => {
       const listId = parseInt(listItem.dataset.id);
       this.openList(listId);
+    });
+  },
+
+  showContextMenu(listItem, event) {
+    event.preventDefault();
+    const listId = parseInt(listItem.dataset.id);
+    const contextMenu = document.createElement('div');
+    contextMenu.className = 'context-menu';
+    contextMenu.innerHTML = `
+      <button class="context-menu-item" id="editList">Редактировать</button>
+      <button class="context-menu-item" id="deleteList">Удалить</button>
+    `;
+
+    document.body.appendChild(contextMenu);
+
+    const rect = listItem.getBoundingClientRect();
+    contextMenu.style.top = `${rect.bottom}px`;
+    contextMenu.style.left = `${rect.left}px`;
+
+    contextMenu.querySelector('#editList').addEventListener('click', () => {
+      this.editList(listId);
+      document.body.removeChild(contextMenu);
+    });
+
+    contextMenu.querySelector('#deleteList').addEventListener('click', () => {
+      this.deleteList(listId);
+      document.body.removeChild(contextMenu);
+    });
+
+    document.addEventListener('click', function removeMenu() {
+      document.body.removeChild(contextMenu);
+      document.removeEventListener('click', removeMenu);
     });
   },
 
