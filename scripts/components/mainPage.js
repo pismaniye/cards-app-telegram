@@ -19,6 +19,7 @@ export const mainPage = {
         ${app.isSelectMode ? `
           <button class="button" id="deleteSelected">Удалить</button>
           <button class="button" id="repeatSelected">Повторить выбранное</button>
+          <button class="button" id="repeatAll">Повторить все</button>
         ` : `
           <button class="button" id="addList">+ Добавить список</button>
         `}
@@ -96,6 +97,13 @@ export const mainPage = {
       if (repeatSelectedButton) {
         repeatSelectedButton.addEventListener('click', () => {
           app.startRepeatForSelectedItems();
+        });
+      }
+
+      const repeatAllButton = container.querySelector('#repeatAll');
+      if (repeatAllButton) {
+        repeatAllButton.addEventListener('click', () => {
+          this.startRepeatAll();
         });
       }
 
@@ -192,6 +200,17 @@ export const mainPage = {
       const listId = parseInt(checkbox.dataset.id);
       const isSelected = app.selectedItems.some(item => item.id === listId);
       checkbox.checked = isSelected;
+    });
+  },
+
+  startRepeatAll() {
+    const allWords = app.lists.flatMap(list => list.words);
+    if (allWords.length === 0) {
+      app.showError('Нет слов для повторения');
+      return;
+    }
+    app.showRepeatSettings(() => {
+      app.startRepeat(allWords);
     });
   }
 };

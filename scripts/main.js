@@ -42,17 +42,20 @@ const app = {
   repeatSettings: { side: '1', order: 'sequential' },
 
   async init() {
+    console.log("Initializing app...");
     try {
       await authenticateAnonymously();
       await this.loadData();
       this.renderPage();
       this.setupTelegramBackButton();
+      console.log("App initialized successfully");
     } catch (error) {
       this.handleError(error, 'Ошибка инициализации');
     }
   },
 
   setupTelegramBackButton() {
+    console.log("Setting up Telegram back button");
     tg.BackButton.onClick(() => {
       if (this.currentPage === 'main') {
         tg.close();
@@ -63,6 +66,7 @@ const app = {
   },
 
   async navigateTo(page) {
+    console.log(`Navigating to page: ${page}`);
     this.currentPage = page;
     this.isSelectMode = false;
     this.selectedItems = [];
@@ -79,6 +83,7 @@ const app = {
   },
 
   async renderPage() {
+    console.log(`Rendering page: ${this.currentPage}`);
     const container = document.getElementById('app');
     container.innerHTML = '';
 
@@ -99,12 +104,14 @@ const app = {
   },
 
   toggleSelectMode() {
+    console.log(`Toggling select mode. Current state: ${this.isSelectMode}`);
     this.isSelectMode = !this.isSelectMode;
     this.selectedItems = [];
     this.renderPage();
   },
 
   toggleItemSelection(item) {
+    console.log(`Toggling item selection: ${JSON.stringify(item)}`);
     const index = this.selectedItems.findIndex(selectedItem => selectedItem.id === item.id);
     if (index === -1) {
       this.selectedItems.push(item);
@@ -115,6 +122,7 @@ const app = {
   },
 
   async deleteSelectedItems() {
+    console.log("Deleting selected items");
     try {
       if (this.currentPage === 'main') {
         this.lists = this.lists.filter(list => !this.selectedItems.some(item => item.id === list.id));
@@ -131,6 +139,7 @@ const app = {
   },
 
   startRepeatForSelectedItems() {
+    console.log("Starting repeat for selected items");
     let wordsToRepeat = [];
     if (this.currentPage === 'main') {
       this.selectedItems.forEach(list => {
@@ -143,6 +152,7 @@ const app = {
   },
 
   startRepeat(words = this.currentList.words) {
+    console.log(`Starting repeat with ${words.length} words`);
     this.showRepeatSettings(() => {
       this.repeatWords = [...words];
       if (this.repeatSettings.order === 'random') {
@@ -155,8 +165,9 @@ const app = {
   },
   
   showRepeatSettings(callback) {
+    console.log("Showing repeat settings");
     const settingsHtml = `
-      <div id="repeatSettings" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border: 1px solid black;">
+      <div id="repeatSettings" class="repeat-settings">
         <h2>Настройки повторения</h2>
         <div>
           <label>Сторона:</label>
@@ -230,6 +241,7 @@ const app = {
   },
   
   nextWord() {
+    console.log("Moving to next word");
     this.currentRepeatIndex++;
     this.showingAnswer = false;
     if (this.currentRepeatIndex >= this.repeatWords.length) {
@@ -241,26 +253,32 @@ const app = {
   },
   
   showAnswer() {
+    console.log("Showing answer");
     this.showingAnswer = true;
     this.renderPage();
   },
 
   async saveData() {
+    console.log("Saving data...");
     try {
       await saveUserData({
         lists: this.lists,
         currentList: this.currentList ? this.currentList.id : null,
         currentWord: this.currentWord ? this.currentWord.id : null,
       });
+      console.log("Data saved successfully");
     } catch (error) {
+      console.error("Error in saveData:", error);
       this.handleError(error, 'Ошибка сохранения данных');
     }
   },
   
   async loadData() {
+    console.log("Loading data...");
     try {
       const data = await loadUserData();
       if (data) {
+        console.log("Data loaded:", data);
         this.lists = data.lists || [];
         if (data.currentList) {
           this.currentList = this.lists.find(list => list.id === data.currentList) || null;
@@ -268,58 +286,76 @@ const app = {
         if (this.currentList && data.currentWord) {
           this.currentWord = this.currentList.words.find(word => word.id === data.currentWord) || null;
         }
+      } else {
+        console.log("No data found, initializing with empty state");
       }
     } catch (error) {
+      console.error("Error in loadData:", error);
       this.handleError(error, 'Ошибка загрузки данных');
     }
   },
 
   async addList(name) {
+    console.log("Adding new list:", name);
     const newList = { id: Date.now(), name, words: [] };
     this.lists.push(newList);
     try {
       await this.saveData();
+      console.log("New list added successfully");
       this.renderPage();
     } catch (error) {
+      console.error("Error in addList:", error);
       this.handleError(error, 'Ошибка при добавлении списка');
+      this.lists.pop(); // Удаляем список из локального массива, если сохранение не удалось
     }
   },
 
   async updateList(listId, newName) {
+    console.log(`Updating list ${listId} with new name: ${newName}`);
     const list = this.lists.find(l => l.id === listId);
     if (list) {
       list.name = newName;
       try {
         await this.saveData();
+        console.log("List updated successfully");
         this.renderPage();
       } catch (error) {
+        console.error("Error in updateList:", error);
         this.handleError(error, 'Ошибка при обновлении списка');
       }
     }
   },
 
   async deleteList(listId) {
+    console.log(`Deleting list: ${listId}`);
     this.lists = this.lists.filter(l => l.id !== listId);
     try {
       await this.saveData();
+      console.log("List deleted successfully");
       this.renderPage();
     } catch (error) {
+      console.error("Error in deleteList:", error);
       this.handleError(error, 'Ошибка при удалении списка');
     }
   },
 
   async addWord(side1, side2, example = '') {
+    console.log(`Adding new word: ${side1} - ${side2}`);
     const newWord = { id: Date.now(), side1, side2, example };
     this.currentList.words.push(newWord);
     try {
       await this.saveData();
+      console.log("New word added successfully");
       this.renderPage();
     } catch (error) {
+      console.error("Error in addWord:", error);
       this.handleError(error, 'Ошибка при добавлении слова');
+      this.currentList.words.pop(); // Удаляем слово из локального массива, если сохранение не удалось
     }
   },
 
   async updateWord(wordId, side1, side2, example = '') {
+    console.log(`Updating word ${wordId}: ${side1} - ${side2}`);
     const word = this.currentList.words.find(w => w.id === wordId);
     if (word) {
       word.side1 = side1;
@@ -327,19 +363,24 @@ const app = {
       word.example = example;
       try {
         await this.saveData();
+        console.log("Word updated successfully");
         this.renderPage();
       } catch (error) {
+        console.error("Error in updateWord:", error);
         this.handleError(error, 'Ошибка при обновлении слова');
       }
     }
   },
 
   async deleteWord(wordId) {
+    console.log(`Deleting word: ${wordId}`);
     this.currentList.words = this.currentList.words.filter(w => w.id !== wordId);
     try {
       await this.saveData();
+      console.log("Word deleted successfully");
       this.renderPage();
     } catch (error) {
+      console.error("Error in deleteWord:", error);
       this.handleError(error, 'Ошибка при удалении слова');
     }
   },
@@ -356,6 +397,7 @@ const app = {
   },
 
   showError(message) {
+    console.error("Showing error:", message);
     const errorContainer = document.getElementById('errorContainer');
     if (errorContainer) {
       errorContainer.textContent = message;
@@ -371,6 +413,7 @@ const app = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  console.log("DOM loaded, initializing app");
   app.init();
 });
 

@@ -121,7 +121,6 @@ input[type="text"], input[type="checkbox"] {
     text-align: center;
 }
 
-/* Новые стили для контекстного меню */
 .context-menu {
     position: absolute;
     background-color: var(--tg-theme-bg-color, #ffffff);
@@ -139,6 +138,51 @@ input[type="text"], input[type="checkbox"] {
 
 .context-menu-item:hover {
     background-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
+}
+
+/* Стили для всплывающего окна настроек */
+.repeat-settings {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--tg-theme-bg-color, #ffffff);
+    border: 1px solid var(--tg-theme-hint-color, #cccccc);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1001;
+    max-width: 80%;
+    width: 300px;
+}
+
+.repeat-settings h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+.repeat-settings div {
+    margin-bottom: 15px;
+}
+
+.repeat-settings label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.repeat-settings select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--tg-theme-hint-color, #cccccc);
+    border-radius: 5px;
+    background-color: var(--tg-theme-bg-color, #ffffff);
+    color: var(--tg-theme-text-color, #000000);
+}
+
+.repeat-settings button {
+    width: 100%;
+    margin-top: 10px;
 }
 
 @media (max-width: 600px) {
