@@ -29,26 +29,27 @@ export const listPage = {
         `}
         <button class="button" id="back">Назад</button>
       </div>
-      <div id="errorContainer" class="error-container"></div>
     `;
 
     const wordContainer = container.querySelector('#wordContainer');
     app.currentList.words.forEach(word => {
       const li = document.createElement('li');
       li.className = 'list-item';
+      li.dataset.id = word.id;
       li.innerHTML = `
-        ${app.isSelectMode ? `<input type="checkbox" class="selectItem" data-id="${word.id}">` : ''}
-        <span class="word-item">
-          <span class="wordSide1">${word.side1}</span> - <span class="wordSide2">${word.side2}</span>
-        </span>
-        ${!app.isSelectMode ? `
-          <div class="button-container">
-            <button class="button editWord" data-id="${word.id}">Редактировать</button>
-            <button class="button deleteWord" data-id="${word.id}">Удалить</button>
-          </div>
-        ` : ''}
+        <div class="list-item-content">
+          ${app.isSelectMode ? `<input type="checkbox" class="selectItem" data-id="${word.id}">` : ''}
+          <span class="item-name">${word.side1} - ${word.side2}</span>
+        </div>
+        <div class="list-item-actions">
+          <button class="edit-btn">Редактировать</button>
+          <button class="delete-btn">Удалить</button>
+        </div>
       `;
       wordContainer.appendChild(li);
+      if (!app.isSelectMode) {
+        this.setupSwipe(li);
+      }
     });
 
     this.setupListeners(container);
@@ -70,7 +71,7 @@ export const listPage = {
         try {
           await app.navigateTo('main');
         } catch (error) {
-          this.showError(container, 'Ошибка при возврате на главную страницу: ' + error.message);
+          app.showError('Ошибка при возврате на главную страницу: ' + error.message);
         }
       });
     }
@@ -84,7 +85,7 @@ export const listPage = {
               await app.deleteSelectedItems();
               this.updateCheckboxes(container);
             } catch (error) {
-              this.showError(container, 'Ошибка при удалении выбранных слов: ' + error.message);
+              app.showError('Ошибка при удалении выбранных слов: ' + error.message);
             }
           }
         });
@@ -115,7 +116,7 @@ export const listPage = {
           try {
             await app.navigateTo('word');
           } catch (error) {
-            this.showError(container, 'Ошибка при переходе на страницу добавления слова: ' + error.message);
+            app.showError('Ошибка при переходе на страницу добавления слова: ' + error.message);
           }
         });
       }
@@ -126,31 +127,49 @@ export const listPage = {
           app.startRepeat(app.currentList.words);
         });
       }
+    }
+  },
 
-      container.querySelectorAll('.editWord').forEach(button => {
-        button.addEventListener('click', async (e) => {
-          const wordId = parseInt(e.target.dataset.id);
-          app.currentWord = app.currentList.words.find(w => w.id === wordId);
-          try {
-            await app.navigateTo('word');
-          } catch (error) {
-            this.showError(container, 'Ошибка при переходе на страницу редактирования слова: ' + error.message);
-          }
-        });
-      });
+  setupSwipe(listItem) {
+    const hammer = new Hammer(listItem);
+    const content = listItem.querySelector('.list-item-content');
+    const actions = listItem.querySelector('.list-item-actions');
+    let isOpen = false;
 
-      container.querySelectorAll('.deleteWord').forEach(button => {
-        button.addEventListener('click', async (e) => {
-          const wordId = parseInt(e.target.dataset.id);
-          if (confirm('Вы уверены, что хотите удалить это слово?')) {
-            try {
-              await app.deleteWord(wordId);
-            } catch (error) {
-              this.showError(container, 'Ошибка при удалении слова: ' + error.message);
-            }
-          }
-        });
-      });
+    hammer.on('swipeleft swiperight', function(ev) {
+      if (ev.type === 'swipeleft' && !isOpen) {
+        content.style.transform = 'translateX(-100px)';
+        actions.style.transform = 'translateX(-100px)';
+        isOpen = true;
+      } else if (ev.type === 'swiperight' && isOpen) {
+        content.style.transform = 'translateX(0)';
+        actions.style.transform = 'translateX(0)';
+        isOpen = false;
+      }
+    });
+
+    const editBtn = listItem.querySelector('.edit-btn');
+    const deleteBtn = listItem.querySelector('.delete-btn');
+
+    editBtn.addEventListener('click', () => {
+      const wordId = parseInt(listItem.dataset.id);
+      this.editWord(wordId);
+    });
+
+    deleteBtn.addEventListener('click', () => {
+      const wordId = parseInt(listItem.dataset.id);
+      this.deleteWord(wordId);
+    });
+  },
+
+  editWord(wordId) {
+    app.currentWord = app.currentList.words.find(w => w.id === wordId);
+    app.navigateTo('word');
+  },
+
+  deleteWord(wordId) {
+    if (confirm('Вы уверены, что хотите удалить это слово?')) {
+      app.deleteWord(wordId);
     }
   },
 
@@ -160,14 +179,5 @@ export const listPage = {
       const isSelected = app.selectedItems.some(item => item.id === wordId);
       checkbox.checked = isSelected;
     });
-  },
-
-  showError(container, message) {
-    const errorContainer = container.querySelector('#errorContainer');
-    errorContainer.textContent = message;
-    errorContainer.style.display = 'block';
-    setTimeout(() => {
-      errorContainer.style.display = 'none';
-    }, 3000);
   }
 };

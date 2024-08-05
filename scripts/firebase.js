@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
 import { getDatabase, ref, set, get, remove, update } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+import { getAuth, signInAnonymously as firebaseSignInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDag5C32hnA_rsBLh9qJcq0im9wO9v7Cyo",
@@ -16,6 +16,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
+
+// Переименовываем функцию, чтобы избежать конфликта имен
+const signInAnonymously = () => firebaseSignInAnonymously(auth);
 
 // Класс для создания пользовательских ошибок
 class FirebaseError extends Error {
@@ -104,4 +107,17 @@ async function authenticateAnonymously() {
   }
 }
 
-export { app, database, auth, saveUserData, loadUserData, authenticateAnonymously, FirebaseError };
+export { 
+  app, 
+  database, 
+  auth, 
+  ref, 
+  set, 
+  get, 
+  remove, 
+  update, 
+  saveUserData, 
+  loadUserData, 
+  authenticateAnonymously, 
+  FirebaseError 
+};

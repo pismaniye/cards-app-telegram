@@ -23,24 +23,27 @@ export const mainPage = {
           <button class="button" id="addList">+ Добавить список</button>
         `}
       </div>
-      <div id="errorContainer" class="error-container"></div>
     `;
 
     const listContainer = container.querySelector('#listContainer');
     app.lists.forEach(list => {
       const li = document.createElement('li');
       li.className = 'list-item';
+      li.dataset.id = list.id;
       li.innerHTML = `
-        ${app.isSelectMode ? `<input type="checkbox" class="selectItem" data-id="${list.id}">` : ''}
-        <span class="listName" data-id="${list.id}">${list.name}</span>
-        ${!app.isSelectMode ? `
-          <div class="button-container">
-            <button class="button editList" data-id="${list.id}">Редактировать</button>
-            <button class="button deleteList" data-id="${list.id}">Удалить</button>
-          </div>
-        ` : ''}
+        <div class="list-item-content">
+          ${app.isSelectMode ? `<input type="checkbox" class="selectItem" data-id="${list.id}">` : ''}
+          <span class="item-name">${list.name}</span>
+        </div>
+        <div class="list-item-actions">
+          <button class="edit-btn">Редактировать</button>
+          <button class="delete-btn">Удалить</button>
+        </div>
       `;
       listContainer.appendChild(li);
+      if (!app.isSelectMode) {
+        this.setupSwipe(li);
+      }
     });
 
     this.setupListeners(container);
@@ -59,7 +62,7 @@ export const mainPage = {
           try {
             await app.addList(name);
           } catch (error) {
-            this.showError(container, 'Ошибка при добавлении списка: ' + error.message);
+            app.showError('Ошибка при добавлении списка: ' + error.message);
           }
         }
       });
@@ -87,7 +90,7 @@ export const mainPage = {
             try {
               await app.deleteSelectedItems();
             } catch (error) {
-              this.showError(container, 'Ошибка при удалении выбранных списков: ' + error.message);
+              app.showError('Ошибка при удалении выбранных списков: ' + error.message);
             }
           }
         });
@@ -110,50 +113,66 @@ export const mainPage = {
           }
         });
       });
+    }
+  },
+
+  setupSwipe(listItem) {
+    const hammer = new Hammer(listItem);
+    const content = listItem.querySelector('.list-item-content');
+    const actions = listItem.querySelector('.list-item-actions');
+    let isOpen = false;
+
+    hammer.on('swipeleft swiperight', function(ev) {
+      if (ev.type === 'swipeleft' && !isOpen) {
+        content.style.transform = 'translateX(-100px)';
+        actions.style.transform = 'translateX(-100px)';
+        isOpen = true;
+      } else if (ev.type === 'swiperight' && isOpen) {
+        content.style.transform = 'translateX(0)';
+        actions.style.transform = 'translateX(0)';
+        isOpen = false;
+      }
+    });
+
+    const editBtn = listItem.querySelector('.edit-btn');
+    const deleteBtn = listItem.querySelector('.delete-btn');
+
+    editBtn.addEventListener('click', () => {
+      const listId = parseInt(listItem.dataset.id);
+      this.editList(listId);
+    });
+
+    deleteBtn.addEventListener('click', () => {
+      const listId = parseInt(listItem.dataset.id);
+      this.deleteList(listId);
+    });
+
+    listItem.querySelector('.item-name').addEventListener('click', () => {
+      const listId = parseInt(listItem.dataset.id);
+      this.openList(listId);
+    });
+  },
+
+  editList(listId) {
+    const newName = prompt('Введите новое название списка:');
+    if (newName) {
+      app.updateList(listId, newName);
+    }
+  },
+
+  deleteList(listId) {
+    if (confirm('Вы уверены, что хотите удалить этот список?')) {
+      app.deleteList(listId);
+    }
+  },
+
+  openList(listId) {
+    const list = app.lists.find(l => l.id === listId);
+    if (list) {
+      app.currentList = list;
+      app.navigateTo('list');
     } else {
-      container.querySelectorAll('.listName').forEach(span => {
-        span.addEventListener('click', async (e) => {
-          const listId = parseInt(e.target.dataset.id);
-          const list = app.lists.find(l => l.id === listId);
-          if (list) {
-            app.currentList = list;
-            try {
-              await app.navigateTo('list');
-            } catch (error) {
-              this.showError(container, 'Ошибка при переходе к списку: ' + error.message);
-            }
-          } else {
-            this.showError(container, 'Список не найден');
-          }
-        });
-      });
-
-      container.querySelectorAll('.editList').forEach(button => {
-        button.addEventListener('click', async (e) => {
-          const listId = parseInt(e.target.dataset.id);
-          const newName = prompt('Введите новое название списка:');
-          if (newName) {
-            try {
-              await app.updateList(listId, newName);
-            } catch (error) {
-              this.showError(container, 'Ошибка при обновлении списка: ' + error.message);
-            }
-          }
-        });
-      });
-
-      container.querySelectorAll('.deleteList').forEach(button => {
-        button.addEventListener('click', async (e) => {
-          const listId = parseInt(e.target.dataset.id);
-          if (confirm('Вы уверены, что хотите удалить этот список?')) {
-            try {
-              await app.deleteList(listId);
-            } catch (error) {
-              this.showError(container, 'Ошибка при удалении списка: ' + error.message);
-            }
-          }
-        });
-      });
+      app.showError('Список не найден');
     }
   },
 
@@ -163,14 +182,5 @@ export const mainPage = {
       const isSelected = app.selectedItems.some(item => item.id === listId);
       checkbox.checked = isSelected;
     });
-  },
-
-  showError(container, message) {
-    const errorContainer = container.querySelector('#errorContainer');
-    errorContainer.textContent = message;
-    errorContainer.style.display = 'block';
-    setTimeout(() => {
-      errorContainer.style.display = 'none';
-    }, 3000);
   }
 };
