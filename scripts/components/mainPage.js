@@ -46,7 +46,7 @@ export const mainPage = {
     li.innerHTML = `
       <div class="list-item-content">
         ${app.isSelectMode ? `<input type="checkbox" class="selectItem" data-id="${list.id}">` : ''}
-        <span class="item-name">${list.name || ''}</span>
+        <span class="item-name nonselectable">${list.name || ''}</span>
         ${!list.name ? `<input type="text" class="edit-list-name" placeholder="Введите название списка">` : ''}
       </div>
     `;

@@ -63,7 +63,7 @@ export const listPage = {
     li.innerHTML = `
       <div class="list-item-content">
         ${app.isSelectMode ? `<input type="checkbox" class="selectItem" data-id="${word.id}">` : ''}
-        <span class="item-name">${word.side1} - ${word.side2}</span>
+        <span class="item-name nonselectable">${word.side1} - ${word.side2}</span>
       </div>
     `;
     container.appendChild(li);
