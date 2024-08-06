@@ -7,40 +7,40 @@ export const mainPage = {
       <div class="header">
         <h1>Списки</h1>
         ${app.isSelectMode ? `
-          <button class="button" id="backFromSelect">Назад</button>
+          <button class="text-button" id="backFromSelect">Готово</button>
         ` : `
-          <button class="button" id="selectMode">Выбрать</button>
+          <button class="text-button" id="selectMode">Выбрать</button>
         `}
       </div>
       <div class="card">
         <ul id="listContainer"></ul>
       </div>
-      <div class="button-container">
-        ${app.isSelectMode ? `
-          <button class="button" id="deleteSelected">Удалить</button>
-          <button class="button" id="repeatSelected">Повторить выбранное</button>
+      ${app.isSelectMode ? `
+        <div class="button-container">
+          <button class="button" id="deleteSelected" style="display: none;">Удалить</button>
+          <button class="button" id="repeatSelected" style="display: none;">Повторить выбранное</button>
           <button class="button" id="repeatAll">Повторить все</button>
-        ` : `
-          <button class="button" id="addList">+ Добавить список</button>
-        `}
-      </div>
+        </div>
+      ` : `
+        <button class="fab" id="addList">+</button>
+      `}
     `;
 
     const listContainer = container.querySelector('#listContainer');
     app.lists.forEach(list => {
       const li = document.createElement('li');
       li.className = 'list-item';
+      li.dataset.id = list.id;
       li.innerHTML = `
-        ${app.isSelectMode ? `<input type="checkbox" class="selectItem" data-id="${list.id}">` : ''}
-        <span class="listName" data-id="${list.id}">${list.name}</span>
-        ${!app.isSelectMode ? `
-          <div class="button-container">
-            <button class="button editList" data-id="${list.id}">Редактировать</button>
-            <button class="button deleteList" data-id="${list.id}">Удалить</button>
-          </div>
-        ` : ''}
+        <div class="list-item-content">
+          ${app.isSelectMode ? `<input type="checkbox" class="selectItem" data-id="${list.id}">` : ''}
+          <span class="item-name">${list.name}</span>
+        </div>
       `;
       listContainer.appendChild(li);
+      if (!app.isSelectMode) {
+        this.setupLongPress(li);
+      }
     });
 
     this.setupListeners(container);
@@ -53,9 +53,15 @@ export const mainPage = {
   setupListeners(container) {
     const addListButton = container.querySelector('#addList');
     if (addListButton) {
-      addListButton.addEventListener('click', () => {
+      addListButton.addEventListener('click', async () => {
         const name = prompt('Введите название списка:');
-        if (name) app.addList(name);
+        if (name) {
+          try {
+            await app.addList(name);
+          } catch (error) {
+            app.showError('Ошибка при добавлении списка: ' + error.message);
+          }
+        }
       });
     }
 
@@ -76,9 +82,13 @@ export const mainPage = {
     if (app.isSelectMode) {
       const deleteSelectedButton = container.querySelector('#deleteSelected');
       if (deleteSelectedButton) {
-        deleteSelectedButton.addEventListener('click', () => {
+        deleteSelectedButton.addEventListener('click', async () => {
           if (confirm('Вы уверены, что хотите удалить выбранные списки?')) {
-            app.deleteSelectedItems();
+            try {
+              await app.deleteSelectedItems();
+            } catch (error) {
+              app.showError('Ошибка при удалении выбранных списков: ' + error.message);
+            }
           }
         });
       }
@@ -93,8 +103,7 @@ export const mainPage = {
       const repeatAllButton = container.querySelector('#repeatAll');
       if (repeatAllButton) {
         repeatAllButton.addEventListener('click', () => {
-          const allWords = app.lists.flatMap(list => list.words);
-          app.startRepeat(allWords);
+          this.startRepeatAll();
         });
       }
 
@@ -108,36 +117,81 @@ export const mainPage = {
           }
         });
       });
+    }
+  },
+
+  setupLongPress(listItem) {
+    let pressTimer;
+    const itemName = listItem.querySelector('.item-name');
+
+    itemName.addEventListener('touchstart', (e) => {
+      pressTimer = setTimeout(() => {
+        this.showContextMenu(listItem, e);
+      }, 500);
+    });
+
+    itemName.addEventListener('touchend', () => {
+      clearTimeout(pressTimer);
+    });
+
+    itemName.addEventListener('click', () => {
+      const listId = parseInt(listItem.dataset.id);
+      this.openList(listId);
+    });
+  },
+
+  showContextMenu(listItem, event) {
+    event.preventDefault();
+    const listId = parseInt(listItem.dataset.id);
+    const contextMenu = document.createElement('div');
+    contextMenu.className = 'context-menu';
+    contextMenu.innerHTML = `
+      <button class="context-menu-item" id="editList">Редактировать</button>
+      <button class="context-menu-item" id="deleteList">Удалить</button>
+    `;
+
+    document.body.appendChild(contextMenu);
+
+    const rect = listItem.getBoundingClientRect();
+    contextMenu.style.top = `${rect.bottom}px`;
+    contextMenu.style.left = `${rect.left}px`;
+
+    contextMenu.querySelector('#editList').addEventListener('click', () => {
+      this.editList(listId);
+      document.body.removeChild(contextMenu);
+    });
+
+    contextMenu.querySelector('#deleteList').addEventListener('click', () => {
+      this.deleteList(listId);
+      document.body.removeChild(contextMenu);
+    });
+
+    document.addEventListener('click', function removeMenu() {
+      document.body.removeChild(contextMenu);
+      document.removeEventListener('click', removeMenu);
+    });
+  },
+
+  editList(listId) {
+    const newName = prompt('Введите новое название списка:');
+    if (newName) {
+      app.updateList(listId, newName);
+    }
+  },
+
+  deleteList(listId) {
+    if (confirm('Вы уверены, что хотите удалить этот список?')) {
+      app.deleteList(listId);
+    }
+  },
+
+  openList(listId) {
+    console.log(`Opening list: ${listId}`);
+    app.setCurrentList(listId);
+    if (app.currentList) {
+      app.navigateTo('list');
     } else {
-      container.querySelectorAll('.listName').forEach(span => {
-        span.addEventListener('click', (e) => {
-          const listId = parseInt(e.target.dataset.id);
-          const list = app.lists.find(l => l.id === listId);
-          if (list) {
-            app.currentList = list;
-            app.navigateTo('list');
-          } else {
-            console.error('Список не найден');
-          }
-        });
-      });
-
-      container.querySelectorAll('.editList').forEach(button => {
-        button.addEventListener('click', (e) => {
-          const listId = parseInt(e.target.dataset.id);
-          const newName = prompt('Введите новое название списка:');
-          if (newName) app.updateList(listId, newName);
-        });
-      });
-
-      container.querySelectorAll('.deleteList').forEach(button => {
-        button.addEventListener('click', (e) => {
-          const listId = parseInt(e.target.dataset.id);
-          if (confirm('Вы уверены, что хотите удалить этот список?')) {
-            app.deleteList(listId);
-          }
-        });
-      });
+      app.showError('Список не найден');
     }
   },
 
@@ -147,5 +201,14 @@ export const mainPage = {
       const isSelected = app.selectedItems.some(item => item.id === listId);
       checkbox.checked = isSelected;
     });
+  },
+
+  startRepeatAll() {
+    const allWords = app.lists.flatMap(list => list.words);
+    if (allWords.length === 0) {
+      app.showError('Нет слов для повторения');
+      return;
+    }
+    app.startRepeat(allWords);
   }
 };

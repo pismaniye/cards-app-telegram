@@ -12,6 +12,7 @@ export const repeatPage = {
           <h1>Повторение завершено</h1>
         </div>
         <p>Вы повторили все слова в этом списке.</p>
+        <div id="errorContainer" class="error-container"></div>
       `;
       this.setupListeners(container);
       return container;
@@ -31,6 +32,7 @@ export const repeatPage = {
         <button class="button answer-button">${showingAnswer ? 'Следующее слово' : 'Показать ответ'}</button>
         ${!showingAnswer ? '<button class="button remember-button">Помню</button>' : ''}
       </div>
+      <div id="errorContainer" class="error-container"></div>
     `;
 
     this.setupListeners(container);
@@ -38,8 +40,12 @@ export const repeatPage = {
   },
 
   setupListeners(container) {
-    container.querySelector('.back-button').addEventListener('click', () => {
-      app.navigateTo('list');
+    container.querySelector('.back-button').addEventListener('click', async () => {
+      try {
+        await app.navigateTo('list');
+      } catch (error) {
+        this.showError(container, 'Ошибка при возврате к списку: ' + error.message);
+      }
     });
 
     const answerButton = container.querySelector('.answer-button');
@@ -61,5 +67,14 @@ export const repeatPage = {
         app.renderPage();
       });
     }
+  },
+
+  showError(container, message) {
+    const errorContainer = container.querySelector('#errorContainer');
+    errorContainer.textContent = message;
+    errorContainer.style.display = 'block';
+    setTimeout(() => {
+      errorContainer.style.display = 'none';
+    }, 3000);
   }
 };

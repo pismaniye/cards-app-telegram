@@ -48,13 +48,15 @@ body {
 }
 
 .list-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    position: relative;
     padding: 15px;
     margin-bottom: 10px;
     background-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
     border-radius: 5px;
+}
+
+.list-item-content {
+    width: 100%;
 }
 
 .button-container {
@@ -109,6 +111,80 @@ input[type="text"], input[type="checkbox"] {
     transform: scale(1.1);
 }
 
+.error-container {
+    display: none;
+    background-color: #ffcccc;
+    color: #cc0000;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.context-menu {
+    position: absolute;
+    background-color: var(--tg-theme-bg-color, #ffffff);
+    border: 1px solid var(--tg-theme-hint-color, #cccccc);
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+.context-menu-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.context-menu-item:hover {
+    background-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
+}
+
+/* Стили для всплывающего окна настроек */
+.repeat-settings {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--tg-theme-bg-color, #ffffff);
+    border: 1px solid var(--tg-theme-hint-color, #cccccc);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1001;
+    max-width: 80%;
+    width: 300px;
+}
+
+.repeat-settings h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+.repeat-settings div {
+    margin-bottom: 15px;
+}
+
+.repeat-settings label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.repeat-settings select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--tg-theme-hint-color, #cccccc);
+    border-radius: 5px;
+    background-color: var(--tg-theme-bg-color, #ffffff);
+    color: var(--tg-theme-text-color, #000000);
+}
+
+.repeat-settings button {
+    width: 100%;
+    margin-top: 10px;
+}
+
 @media (max-width: 600px) {
     #app {
         padding: 10px;
@@ -132,4 +208,59 @@ input[type="text"], input[type="checkbox"] {
         margin-top: 10px;
         width: 100%;
     }
+}
+
+/* Добавьте эти стили в конец файла main.css */
+
+.fab {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: var(--tg-theme-button-color, #3390ec);
+    color: var(--tg-theme-button-text-color, #ffffff);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    border: none;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.fab:hover {
+    transform: scale(1.1);
+}
+
+/* Добавьте эти стили в файл main.css */
+
+.text-button {
+    background: none;
+    border: none;
+    color: var(--tg-theme-link-color, #2481cc);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    font-weight: 500;
+    transition: opacity 0.3s ease;
+}
+
+.text-button:hover {
+    opacity: 0.8;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 20px;
 }
