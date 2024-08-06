@@ -353,21 +353,19 @@ setCurrentList(listId) {
   console.log("Current list set to:", this.currentList);
 },
 
-  async updateList(listId, newName) {
-    console.log(`Updating list ${listId} with new name: ${newName}`);
-    const list = this.lists.find(l => l.id === listId);
-    if (list) {
-      list.name = newName;
-      try {
-        await this.saveData();
-        console.log("List updated successfully");
-        this.renderPage();
-      } catch (error) {
-        console.error("Error in updateList:", error);
-        this.handleError(error, 'Ошибка при обновлении списка');
-      }
+async updateList(listId, newName) {
+  const list = this.lists.find(l => l.id === listId);
+  if (list) {
+    list.name = newName;
+    try {
+      await this.saveData();
+      console.log("Список обновлен успешно");
+    } catch (error) {
+      console.error("Ошибка при обновлении списка:", error);
+      this.handleError(error, 'Ошибка при обновлении списка');
     }
-  },
+  }
+},
 
   async deleteList(listId) {
     console.log(`Deleting list: ${listId}`);

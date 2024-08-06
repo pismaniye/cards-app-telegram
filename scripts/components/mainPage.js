@@ -15,32 +15,21 @@ export const mainPage = {
       <div class="card">
         <ul id="listContainer"></ul>
       </div>
+      ${!app.isSelectMode ? `
+        <button class="fab" id="addList">+</button>
+      ` : ''}
       ${app.isSelectMode ? `
         <div class="button-container">
           <button class="button" id="deleteSelected" style="display: none;">Удалить</button>
           <button class="button" id="repeatSelected" style="display: none;">Повторить выбранное</button>
           <button class="button" id="repeatAll">Повторить все</button>
         </div>
-      ` : `
-        <button class="fab" id="addList">+</button>
-      `}
+      ` : ''}
     `;
 
     const listContainer = container.querySelector('#listContainer');
     app.lists.forEach(list => {
-      const li = document.createElement('li');
-      li.className = 'list-item';
-      li.dataset.id = list.id;
-      li.innerHTML = `
-        <div class="list-item-content">
-          ${app.isSelectMode ? `<input type="checkbox" class="selectItem" data-id="${list.id}">` : ''}
-          <span class="item-name">${list.name}</span>
-        </div>
-      `;
-      listContainer.appendChild(li);
-      if (!app.isSelectMode) {
-        this.setupLongPress(li);
-      }
+      this.renderListItem(listContainer, list);
     });
 
     this.setupListeners(container);
@@ -50,18 +39,32 @@ export const mainPage = {
     return container;
   },
 
+  renderListItem(container, list) {
+    const li = document.createElement('li');
+    li.className = 'list-item';
+    li.dataset.id = list.id;
+    li.innerHTML = `
+      <div class="list-item-content">
+        ${app.isSelectMode ? `<input type="checkbox" class="selectItem" data-id="${list.id}">` : ''}
+        <span class="item-name">${list.name || ''}</span>
+        ${!list.name ? `<input type="text" class="edit-list-name" placeholder="Введите название списка">` : ''}
+      </div>
+    `;
+    container.appendChild(li);
+    if (!app.isSelectMode) {
+      this.setupListItemListeners(li);
+    }
+  },
+
   setupListeners(container) {
     const addListButton = container.querySelector('#addList');
     if (addListButton) {
-      addListButton.addEventListener('click', async () => {
-        const name = prompt('Введите название списка:');
-        if (name) {
-          try {
-            await app.addList(name);
-          } catch (error) {
-            app.showError('Ошибка при добавлении списка: ' + error.message);
-          }
-        }
+      addListButton.addEventListener('click', () => {
+        const listContainer = container.querySelector('#listContainer');
+        const newList = { id: Date.now(), name: '' };
+        app.lists.unshift(newList);
+        this.renderListItem(listContainer, newList);
+        listContainer.firstChild.querySelector('.edit-list-name').focus();
       });
     }
 
@@ -120,34 +123,68 @@ export const mainPage = {
     }
   },
 
-  setupLongPress(listItem) {
-    let pressTimer;
-    const itemName = listItem.querySelector('.item-name');
+  setupListItemListeners(li) {
+    const itemName = li.querySelector('.item-name');
+    const editInput = li.querySelector('.edit-list-name');
 
-    itemName.addEventListener('touchstart', (e) => {
-      pressTimer = setTimeout(() => {
-        this.showContextMenu(listItem, e);
+    let longPressTimer;
+    let isLongPress = false;
+
+    const startLongPress = (e) => {
+      isLongPress = false;
+      longPressTimer = setTimeout(() => {
+        isLongPress = true;
+        this.showContextMenu(li, e);
       }, 500);
-    });
+    };
 
-    itemName.addEventListener('touchend', () => {
-      clearTimeout(pressTimer);
-    });
+    const endLongPress = () => {
+      clearTimeout(longPressTimer);
+    };
 
-    itemName.addEventListener('click', () => {
-      const listId = parseInt(listItem.dataset.id);
-      this.openList(listId);
+    li.addEventListener('touchstart', startLongPress);
+    li.addEventListener('touchend', endLongPress);
+    li.addEventListener('touchmove', endLongPress);
+
+    li.addEventListener('mousedown', startLongPress);
+    li.addEventListener('mouseup', endLongPress);
+    li.addEventListener('mouseleave', endLongPress);
+
+    if (editInput) {
+      editInput.addEventListener('blur', async () => {
+        const newName = editInput.value.trim();
+        if (newName) {
+          const listId = parseInt(li.dataset.id);
+          await app.updateList(listId, newName);
+          itemName.textContent = newName;
+          editInput.remove();
+        }
+      });
+
+      editInput.addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter') {
+          editInput.blur();
+        }
+      });
+    }
+
+    li.addEventListener('click', (e) => {
+      if (!isLongPress && (!editInput || (editInput && e.target !== editInput))) {
+        const listId = parseInt(li.dataset.id);
+        app.setCurrentList(listId);
+        app.navigateTo('list');
+      }
     });
   },
-
+  
   showContextMenu(listItem, event) {
     event.preventDefault();
     const listId = parseInt(listItem.dataset.id);
     const contextMenu = document.createElement('div');
     contextMenu.className = 'context-menu';
     contextMenu.innerHTML = `
-      <button class="context-menu-item" id="editList">Редактировать</button>
-      <button class="context-menu-item" id="deleteList">Удалить</button>
+      <div class="context-menu-item" id="editList">Редактировать</div>
+      <div class="context-menu-item" id="deleteList">Удалить</div>
     `;
 
     document.body.appendChild(contextMenu);
@@ -173,25 +210,37 @@ export const mainPage = {
   },
 
   editList(listId) {
-    const newName = prompt('Введите новое название списка:');
-    if (newName) {
-      app.updateList(listId, newName);
-    }
+    const listItem = document.querySelector(`.list-item[data-id="${listId}"]`);
+    const itemName = listItem.querySelector('.item-name');
+    const currentName = itemName.textContent;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentName;
+    input.className = 'edit-list-name';
+
+    itemName.replaceWith(input);
+    input.focus();
+
+    input.addEventListener('blur', async () => {
+      const newName = input.value.trim();
+      if (newName && newName !== currentName) {
+        await app.updateList(listId, newName);
+        itemName.textContent = newName;
+      }
+      input.replaceWith(itemName);
+    });
+
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        input.blur();
+      }
+    });
   },
 
   deleteList(listId) {
     if (confirm('Вы уверены, что хотите удалить этот список?')) {
       app.deleteList(listId);
-    }
-  },
-
-  openList(listId) {
-    console.log(`Opening list: ${listId}`);
-    app.setCurrentList(listId);
-    if (app.currentList) {
-      app.navigateTo('list');
-    } else {
-      app.showError('Список не найден');
     }
   },
 
