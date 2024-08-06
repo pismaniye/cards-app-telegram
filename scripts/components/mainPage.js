@@ -17,8 +17,8 @@ export const mainPage = {
       </div>
       <div class="button-container">
         ${app.isSelectMode ? `
-          <button class="button" id="deleteSelected">Удалить</button>
-          <button class="button" id="repeatSelected">Повторить выбранное</button>
+          <button class="button" id="deleteSelected" style="display: none;">Удалить</button>
+          <button class="button" id="repeatSelected" style="display: none;">Повторить выбранное</button>
           <button class="button" id="repeatAll">Повторить все</button>
         ` : `
           <button class="button" id="addList">+ Добавить список</button>

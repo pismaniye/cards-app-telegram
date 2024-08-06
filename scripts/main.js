@@ -97,28 +97,51 @@ const app = {
       case 'word':
         container.appendChild(wordPage.render());
         break;
-      case 'repeat':
-        container.appendChild(repeatPage.render());
-        break;
-    }
-  },
+        case 'repeat':
+          container.appendChild(repeatPage.render());
+          break;
+      }
+  
+      this.updateSelectModeUI();
+    },
 
   toggleSelectMode() {
-    console.log(`Toggling select mode. Current state: ${this.isSelectMode}`);
+    console.log(`Переключение режима выбора. Текущее состояние: ${this.isSelectMode}`);
     this.isSelectMode = !this.isSelectMode;
     this.selectedItems = [];
     this.renderPage();
+    this.updateSelectModeUI(); // Добавьте эту строку
   },
 
   toggleItemSelection(item) {
-    console.log(`Toggling item selection: ${JSON.stringify(item)}`);
+    console.log(`Переключение выбора элемента: ${JSON.stringify(item)}`);
     const index = this.selectedItems.findIndex(selectedItem => selectedItem.id === item.id);
     if (index === -1) {
       this.selectedItems.push(item);
     } else {
       this.selectedItems.splice(index, 1);
     }
-    this.renderPage();
+    this.updateSelectModeUI(); // Добавьте эту строку
+  },
+
+  updateSelectModeUI() {
+    console.log("Обновление UI режима выбора");
+    const deleteSelectedButton = document.getElementById('deleteSelected');
+    const repeatSelectedButton = document.getElementById('repeatSelected');
+    const repeatAllButton = document.getElementById('repeatAll');
+
+    const hasSelectedItems = this.selectedItems.length > 0;
+
+    if (deleteSelectedButton) {
+      deleteSelectedButton.style.display = hasSelectedItems ? 'inline-block' : 'none';
+    }
+    if (repeatSelectedButton) {
+      repeatSelectedButton.style.display = hasSelectedItems ? 'inline-block' : 'none';
+    }
+    // Кнопка "Повторить все" всегда видна, если есть хотя бы один список
+    if (repeatAllButton) {
+      repeatAllButton.disabled = this.lists.length === 0;
+    }
   },
 
   async deleteSelectedItems() {
@@ -156,7 +179,7 @@ const app = {
     this.showRepeatSettings(() => {
       this.repeatWords = [...words];
       if (this.repeatSettings.order === 'random') {
-        this.shuffleArray(this.repeatWords);
+        this.repeatWords = this.shuffleArray(this.repeatWords);
       }
       this.currentRepeatIndex = 0;
       this.showingAnswer = false;
@@ -238,6 +261,7 @@ const app = {
       const j = Math.floor(Math.random() * (i + 1));
       [array[i], array[j]] = [array[j], array[i]];
     }
+    return array; // Возвращаем перемешанный массив для удобства использования
   },
   
   nextWord() {
@@ -408,15 +432,23 @@ setCurrentList(listId) {
     console.error(`${context}:`, error);
     let errorMessage = 'Произошла неизвестная ошибка';
     if (error instanceof FirebaseError) {
-      errorMessage = `${context}: ${error.message}`;
-    } else if (error.message) {
-      errorMessage = `${context}: ${error.message}`;
+      switch(error.code) {
+        case 'PERMISSION_DENIED':
+          errorMessage = 'У вас нет прав для выполнения этого действия';
+          break;
+        case 'NETWORK_ERROR':
+          errorMessage = 'Проблема с подключением к сети';
+          break;
+        default:
+          errorMessage = `Ошибка Firebase: ${error.message}`;
+      }
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
     }
-    this.showError(errorMessage);
+    this.showError(`${context}: ${errorMessage}`);
   },
 
   showError(message) {
-    console.error("Showing error:", message);
     const errorContainer = document.getElementById('errorContainer');
     if (errorContainer) {
       errorContainer.textContent = message;

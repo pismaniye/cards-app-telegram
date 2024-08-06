@@ -8,14 +8,14 @@ export const listPage = {
       return document.createElement('div');
     }
 
-    console.log('Rendering list page for list:', app.currentList);
+    console.log('Отрисовка страницы списка для списка:', app.currentList);
 
     const container = document.createElement('div');
     container.innerHTML = `
       <div class="header">
         <h1>${app.currentList.name}</h1>
-        <button class="button" id="${app.isSelectMode ? 'exitSelectMode' : 'selectMode'}">
-          ${app.isSelectMode ? 'Выйти из режима выбора' : 'Выбрать'}
+        <button class="button" id="${app.isSelectMode ? 'backFromSelect' : 'selectMode'}">
+          ${app.isSelectMode ? 'Назад' : 'Выбрать'}
         </button>
       </div>
       <div class="card">
@@ -23,13 +23,15 @@ export const listPage = {
       </div>
       <div class="button-container">
         ${app.isSelectMode ? `
-          <button class="button" id="deleteSelected">Удалить</button>
-          <button class="button" id="repeatSelected">Повторить</button>
+          <button class="button" id="deleteSelected" style="display: none;">Удалить</button>
+          <button class="button" id="repeatSelected" style="display: none;">Повторить</button>
         ` : `
           <button class="button" id="addWord">+ слово</button>
           <button class="button" id="repeatAll">Повторить все</button>
         `}
-        <button class="button" id="back">Назад</button>
+      </div>
+      <div class="button-container">
+        <button class="button" id="goToMainPage">Списки</button>
       </div>
     `;
 
@@ -60,26 +62,30 @@ export const listPage = {
     }
 
     this.setupListeners(container);
-    this.updateCheckboxes(container);
+    if (app.isSelectMode) {
+      this.updateCheckboxes(container);
+    }
     return container;
   },
 
   setupListeners(container) {
-    const toggleSelectModeButton = container.querySelector('#selectMode, #exitSelectMode');
+    const toggleSelectModeButton = container.querySelector('#selectMode, #backFromSelect');
     if (toggleSelectModeButton) {
       toggleSelectModeButton.addEventListener('click', () => {
-        app.toggleSelectMode();
+        if (app.isSelectMode) {
+          app.isSelectMode = false;
+          app.selectedItems = [];
+          app.renderPage();
+        } else {
+          app.toggleSelectMode();
+        }
       });
     }
 
-    const backButton = container.querySelector('#back');
-    if (backButton) {
-      backButton.addEventListener('click', async () => {
-        try {
-          await app.navigateTo('main');
-        } catch (error) {
-          app.showError('Ошибка при возврате на главную страницу: ' + error.message);
-        }
+    const goToMainPageButton = container.querySelector('#goToMainPage');
+    if (goToMainPageButton) {
+      goToMainPageButton.addEventListener('click', () => {
+        app.navigateTo('main');
       });
     }
 
@@ -111,7 +117,7 @@ export const listPage = {
           const word = app.currentList.words.find(w => w.id === wordId);
           if (word) {
             app.toggleItemSelection(word);
-            this.updateCheckboxes(container);
+            app.updateSelectModeUI();
           }
         });
       });
