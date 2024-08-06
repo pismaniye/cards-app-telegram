@@ -21,17 +21,17 @@ export const listPage = {
       <div class="card">
         <ul id="wordContainer"></ul>
       </div>
-      <div class="button-container">
-        ${app.isSelectMode ? `
+      ${app.isSelectMode ? `
+        <div class="button-container">
           <button class="button" id="deleteSelected" style="display: none;">Удалить</button>
           <button class="button" id="repeatSelected" style="display: none;">Повторить</button>
-        ` : `
-          <button class="button" id="addWord">+ слово</button>
-          <button class="button" id="repeatAll">Повторить все</button>
-        `}
-      </div>
+        </div>
+      ` : `
+        <button class="fab" id="addWord">+</button>
+      `}
       <div class="button-container">
         <button class="button" id="goToMainPage">Списки</button>
+        ${!app.isSelectMode ? `<button class="button" id="repeatAll">Повторить все</button>` : ''}
       </div>
     `;
 

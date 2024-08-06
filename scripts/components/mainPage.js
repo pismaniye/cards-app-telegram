@@ -15,15 +15,15 @@ export const mainPage = {
       <div class="card">
         <ul id="listContainer"></ul>
       </div>
-      <div class="button-container">
-        ${app.isSelectMode ? `
+      ${app.isSelectMode ? `
+        <div class="button-container">
           <button class="button" id="deleteSelected" style="display: none;">Удалить</button>
           <button class="button" id="repeatSelected" style="display: none;">Повторить выбранное</button>
           <button class="button" id="repeatAll">Повторить все</button>
-        ` : `
-          <button class="button" id="addList">+ Добавить список</button>
-        `}
-      </div>
+        </div>
+      ` : `
+        <button class="fab" id="addList">+</button>
+      `}
     `;
 
     const listContainer = container.querySelector('#listContainer');
