@@ -8,8 +8,8 @@ export const wordPage = {
     
     container.innerHTML = `
       <div class="header">
+        <button class="text-button back-button">Назад</button>
         <h1>${isNewWord ? 'Новое слово' : 'Редактировать слово'}</h1>
-        <button class="button back-button">Назад</button>
       </div>
       <div class="card">
         <div class="word-form">
@@ -30,10 +30,12 @@ export const wordPage = {
 
   setupListeners(container) {
     container.querySelector('.back-button').addEventListener('click', async () => {
-      try {
-        await app.navigateTo('list');
-      } catch (error) {
-        this.showError(container, 'Ошибка при возврате к списку: ' + error.message);
+      if (confirm('Вы уверены, что хотите выйти без сохранения изменений?')) {
+        try {
+          await app.navigateTo('list');
+        } catch (error) {
+          this.showError(container, 'Ошибка при возврате к списку: ' + error.message);
+        }
       }
     });
 

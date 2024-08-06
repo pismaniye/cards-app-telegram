@@ -14,8 +14,8 @@ export const listPage = {
     container.innerHTML = `
       <div class="header">
         <h1>${app.currentList.name}</h1>
-        <button class="button" id="${app.isSelectMode ? 'backFromSelect' : 'selectMode'}">
-          ${app.isSelectMode ? 'Назад' : 'Выбрать'}
+        <button class="text-button" id="${app.isSelectMode ? 'backFromSelect' : 'selectMode'}">
+          ${app.isSelectMode ? 'Готово' : 'Выбрать'}
         </button>
       </div>
       <div class="card">

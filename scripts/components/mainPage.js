@@ -7,9 +7,9 @@ export const mainPage = {
       <div class="header">
         <h1>Списки</h1>
         ${app.isSelectMode ? `
-          <button class="button" id="backFromSelect">Назад</button>
+          <button class="text-button" id="backFromSelect">Готово</button>
         ` : `
-          <button class="button" id="selectMode">Выбрать</button>
+          <button class="text-button" id="selectMode">Выбрать</button>
         `}
       </div>
       <div class="card">

@@ -234,3 +234,33 @@ input[type="text"], input[type="checkbox"] {
 .fab:hover {
     transform: scale(1.1);
 }
+
+/* Добавьте эти стили в файл main.css */
+
+.text-button {
+    background: none;
+    border: none;
+    color: var(--tg-theme-link-color, #2481cc);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    font-weight: 500;
+    transition: opacity 0.3s ease;
+}
+
+.text-button:hover {
+    opacity: 0.8;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 20px;
+}
