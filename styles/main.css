@@ -235,6 +235,16 @@ input[type="text"], input[type="checkbox"] {
     transform: scale(1.1);
 }
 
+.fab .nonselectable {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+/* ... (остальные существующие стили) */
+
 /* Добавьте эти стили в файл main.css */
 
 .text-button {

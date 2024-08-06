@@ -27,7 +27,7 @@ export const listPage = {
           <button class="button" id="repeatSelected" style="display: none;">Повторить</button>
         </div>
       ` : `
-        <button class="fab" id="addWord">+</button>
+        <button class="fab" id="addWord"><span class="nonselectable">+</span></button>
       `}
       <div class="button-container">
         <button class="button" id="goToMainPage">Списки</button>

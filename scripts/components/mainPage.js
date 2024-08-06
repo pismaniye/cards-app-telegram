@@ -16,7 +16,7 @@ export const mainPage = {
         <ul id="listContainer"></ul>
       </div>
       ${!app.isSelectMode ? `
-        <button class="fab" id="addList">+</button>
+        <button class="fab" id="addList"><span class="nonselectable">+</span></button>
       ` : ''}
       ${app.isSelectMode ? `
         <div class="button-container">
