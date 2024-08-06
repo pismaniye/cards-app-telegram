@@ -41,19 +41,7 @@ export const listPage = {
         wordContainer.innerHTML = '<li>Список пуст. Добавьте новые слова.</li>';
       } else {
         app.currentList.words.forEach(word => {
-          const li = document.createElement('li');
-          li.className = 'list-item';
-          li.dataset.id = word.id;
-          li.innerHTML = `
-            <div class="list-item-content">
-              ${app.isSelectMode ? `<input type="checkbox" class="selectItem" data-id="${word.id}">` : ''}
-              <span class="item-name">${word.side1} - ${word.side2}</span>
-            </div>
-          `;
-          wordContainer.appendChild(li);
-          if (!app.isSelectMode) {
-            this.setupLongPress(li);
-          }
+          this.renderWordItem(wordContainer, word);
         });
       }
     } else {
@@ -66,6 +54,22 @@ export const listPage = {
       this.updateCheckboxes(container);
     }
     return container;
+  },
+
+  renderWordItem(container, word) {
+    const li = document.createElement('li');
+    li.className = 'list-item';
+    li.dataset.id = word.id;
+    li.innerHTML = `
+      <div class="list-item-content">
+        ${app.isSelectMode ? `<input type="checkbox" class="selectItem" data-id="${word.id}">` : ''}
+        <span class="item-name">${word.side1} - ${word.side2}</span>
+      </div>
+    `;
+    container.appendChild(li);
+    if (!app.isSelectMode) {
+      this.setupWordItemListeners(li);
+    }
   },
 
   setupListeners(container) {
@@ -143,23 +147,35 @@ export const listPage = {
     }
   },
 
-  setupLongPress(listItem) {
-    let pressTimer;
-    const itemName = listItem.querySelector('.item-name');
+  setupWordItemListeners(li) {
+    let longPressTimer;
+    let isLongPress = false;
 
-    itemName.addEventListener('touchstart', (e) => {
-      pressTimer = setTimeout(() => {
-        this.showContextMenu(listItem, e);
+    const startLongPress = (e) => {
+      isLongPress = false;
+      longPressTimer = setTimeout(() => {
+        isLongPress = true;
+        this.showContextMenu(li, e);
       }, 500);
-    });
+    };
 
-    itemName.addEventListener('touchend', () => {
-      clearTimeout(pressTimer);
-    });
+    const endLongPress = () => {
+      clearTimeout(longPressTimer);
+    };
 
-    itemName.addEventListener('click', () => {
-      const wordId = parseInt(listItem.dataset.id);
-      this.editWord(wordId);
+    li.addEventListener('touchstart', startLongPress);
+    li.addEventListener('touchend', endLongPress);
+    li.addEventListener('touchmove', endLongPress);
+
+    li.addEventListener('mousedown', startLongPress);
+    li.addEventListener('mouseup', endLongPress);
+    li.addEventListener('mouseleave', endLongPress);
+
+    li.addEventListener('click', (e) => {
+      if (!isLongPress) {
+        const wordId = parseInt(li.dataset.id);
+        this.editWord(wordId);
+      }
     });
   },
 
@@ -169,8 +185,8 @@ export const listPage = {
     const contextMenu = document.createElement('div');
     contextMenu.className = 'context-menu';
     contextMenu.innerHTML = `
-      <button class="context-menu-item" id="editWord">Редактировать</button>
-      <button class="context-menu-item" id="deleteWord">Удалить</button>
+      <div class="context-menu-item" id="editWord">Редактировать</div>
+      <div class="context-menu-item" id="deleteWord">Удалить</div>
     `;
 
     document.body.appendChild(contextMenu);
@@ -212,15 +228,5 @@ export const listPage = {
       const isSelected = app.selectedItems.some(item => item.id === wordId);
       checkbox.checked = isSelected;
     });
-  },
-
-  openList(listId) {
-    console.log(`Opening list: ${listId}`);
-    app.setCurrentList(listId);
-    if (app.currentList) {
-      app.navigateTo('list');
-    } else {
-      app.showError('Список не найден');
-    }
   }
 };
