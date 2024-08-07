@@ -1,7 +1,5 @@
-import app from '../main.js';
-
 export const mainPage = {
-  render() {
+  render(app) {
     const container = document.createElement('div');
     container.innerHTML = `
       <div class="header">
@@ -29,17 +27,17 @@ export const mainPage = {
 
     const listContainer = container.querySelector('#listContainer');
     app.lists.forEach(list => {
-      this.renderListItem(listContainer, list);
+      this.renderListItem(listContainer, list, app);
     });
 
-    this.setupListeners(container);
+    this.setupListeners(container, app);
     if (app.isSelectMode) {
-      this.updateCheckboxes(container);
+      this.updateCheckboxes(container, app);
     }
     return container;
   },
 
-  renderListItem(container, list) {
+  renderListItem(container, list, app) {
     const li = document.createElement('li');
     li.className = 'list-item';
     li.dataset.id = list.id;
@@ -50,21 +48,26 @@ export const mainPage = {
         ${!list.name ? `<input type="text" class="edit-list-name" placeholder="Введите название списка">` : ''}
       </div>
     `;
-    container.appendChild(li);
+    container.insertBefore(li, container.firstChild); // Вставляем новый элемент в начало списка
     if (!app.isSelectMode) {
-      this.setupListItemListeners(li);
+      this.setupListItemListeners(li, app);
     }
+    return li;  // Возвращаем созданный элемент
   },
 
-  setupListeners(container) {
+  setupListeners(container, app) {
     const addListButton = container.querySelector('#addList');
     if (addListButton) {
       addListButton.addEventListener('click', () => {
         const listContainer = container.querySelector('#listContainer');
         const newList = { id: Date.now(), name: '' };
         app.lists.unshift(newList);
-        this.renderListItem(listContainer, newList);
-        listContainer.firstChild.querySelector('.edit-list-name').focus();
+        const newListItem = this.renderListItem(listContainer, newList, app);
+        
+        const editInput = newListItem.querySelector('.edit-list-name');
+        if (editInput) {
+          editInput.focus();
+        }
       });
     }
 
@@ -106,7 +109,7 @@ export const mainPage = {
       const repeatAllButton = container.querySelector('#repeatAll');
       if (repeatAllButton) {
         repeatAllButton.addEventListener('click', () => {
-          this.startRepeatAll();
+          this.startRepeatAll(app);
         });
       }
 
@@ -116,17 +119,14 @@ export const mainPage = {
           const list = app.lists.find(l => l.id === listId);
           if (list) {
             app.toggleItemSelection(list);
-            this.updateCheckboxes(container);
+            this.updateCheckboxes(container, app);
           }
         });
       });
     }
   },
 
-  setupListItemListeners(li) {
-    const itemName = li.querySelector('.item-name');
-    const editInput = li.querySelector('.edit-list-name');
-
+  setupListItemListeners(li, app) {
     let longPressTimer;
     let isLongPress = false;
 
@@ -134,7 +134,7 @@ export const mainPage = {
       isLongPress = false;
       longPressTimer = setTimeout(() => {
         isLongPress = true;
-        this.showContextMenu(li, e);
+        this.showContextMenu(li, e, app);
       }, 500);
     };
 
@@ -150,13 +150,22 @@ export const mainPage = {
     li.addEventListener('mouseup', endLongPress);
     li.addEventListener('mouseleave', endLongPress);
 
+    li.addEventListener('click', (e) => {
+      if (!isLongPress && (!app.isSelectMode)) {
+        const listId = parseInt(li.dataset.id);
+        app.setCurrentList(listId);
+        app.navigateTo('list');
+      }
+    });
+
+    const editInput = li.querySelector('.edit-list-name');
     if (editInput) {
       editInput.addEventListener('blur', async () => {
         const newName = editInput.value.trim();
         if (newName) {
           const listId = parseInt(li.dataset.id);
           await app.updateList(listId, newName);
-          itemName.textContent = newName;
+          li.querySelector('.item-name').textContent = newName;
           editInput.remove();
         }
       });
@@ -167,17 +176,9 @@ export const mainPage = {
         }
       });
     }
-
-    li.addEventListener('click', (e) => {
-      if (!isLongPress && (!editInput || (editInput && e.target !== editInput))) {
-        const listId = parseInt(li.dataset.id);
-        app.setCurrentList(listId);
-        app.navigateTo('list');
-      }
-    });
   },
-  
-  showContextMenu(listItem, event) {
+
+  showContextMenu(listItem, event, app) {
     event.preventDefault();
     const listId = parseInt(listItem.dataset.id);
     const contextMenu = document.createElement('div');
@@ -194,12 +195,12 @@ export const mainPage = {
     contextMenu.style.left = `${rect.left}px`;
 
     contextMenu.querySelector('#editList').addEventListener('click', () => {
-      this.editList(listId);
+      this.editList(listId, app);
       document.body.removeChild(contextMenu);
     });
 
     contextMenu.querySelector('#deleteList').addEventListener('click', () => {
-      this.deleteList(listId);
+      this.deleteList(listId, app);
       document.body.removeChild(contextMenu);
     });
 
@@ -209,7 +210,7 @@ export const mainPage = {
     });
   },
 
-  editList(listId) {
+  editList(listId, app) {
     const listItem = document.querySelector(`.list-item[data-id="${listId}"]`);
     const itemName = listItem.querySelector('.item-name');
     const currentName = itemName.textContent;
@@ -238,13 +239,13 @@ export const mainPage = {
     });
   },
 
-  deleteList(listId) {
+  deleteList(listId, app) {
     if (confirm('Вы уверены, что хотите удалить этот список?')) {
       app.deleteList(listId);
     }
   },
 
-  updateCheckboxes(container) {
+  updateCheckboxes(container, app) {
     container.querySelectorAll('.selectItem').forEach(checkbox => {
       const listId = parseInt(checkbox.dataset.id);
       const isSelected = app.selectedItems.some(item => item.id === listId);
@@ -252,7 +253,7 @@ export const mainPage = {
     });
   },
 
-  startRepeatAll() {
+  startRepeatAll(app) {
     const allWords = app.lists.flatMap(list => list.words);
     if (allWords.length === 0) {
       app.showError('Нет слов для повторения');

@@ -1,7 +1,5 @@
-import app from '../main.js';
-
 export const listPage = {
-  render() {
+  render(app) {
     if (!app.currentList) {
       console.error('Текущий список не определен');
       app.navigateTo('main');
@@ -41,7 +39,7 @@ export const listPage = {
         wordContainer.innerHTML = '<li>Список пуст. Добавьте новые слова.</li>';
       } else {
         app.currentList.words.forEach(word => {
-          this.renderWordItem(wordContainer, word);
+          this.renderWordItem(wordContainer, word, app);
         });
       }
     } else {
@@ -49,14 +47,14 @@ export const listPage = {
       wordContainer.innerHTML = '<li>Ошибка загрузки слов</li>';
     }
 
-    this.setupListeners(container);
+    this.setupListeners(container, app);
     if (app.isSelectMode) {
-      this.updateCheckboxes(container);
+      this.updateCheckboxes(container, app);
     }
     return container;
   },
 
-  renderWordItem(container, word) {
+  renderWordItem(container, word, app) {
     const li = document.createElement('li');
     li.className = 'list-item';
     li.dataset.id = word.id;
@@ -68,11 +66,11 @@ export const listPage = {
     `;
     container.appendChild(li);
     if (!app.isSelectMode) {
-      this.setupWordItemListeners(li);
+      this.setupWordItemListeners(li, app);
     }
   },
 
-  setupListeners(container) {
+  setupListeners(container, app) {
     const toggleSelectModeButton = container.querySelector('#selectMode, #backFromSelect');
     if (toggleSelectModeButton) {
       toggleSelectModeButton.addEventListener('click', () => {
@@ -147,7 +145,7 @@ export const listPage = {
     }
   },
 
-  setupWordItemListeners(li) {
+  setupWordItemListeners(li, app) {
     let longPressTimer;
     let isLongPress = false;
 
@@ -155,7 +153,7 @@ export const listPage = {
       isLongPress = false;
       longPressTimer = setTimeout(() => {
         isLongPress = true;
-        this.showContextMenu(li, e);
+        this.showContextMenu(li, e, app);
       }, 500);
     };
 
@@ -174,12 +172,12 @@ export const listPage = {
     li.addEventListener('click', (e) => {
       if (!isLongPress) {
         const wordId = parseInt(li.dataset.id);
-        this.editWord(wordId);
+        this.editWord(wordId, app);
       }
     });
   },
 
-  showContextMenu(listItem, event) {
+  showContextMenu(listItem, event, app) {
     event.preventDefault();
     const wordId = parseInt(listItem.dataset.id);
     const contextMenu = document.createElement('div');
@@ -196,12 +194,12 @@ export const listPage = {
     contextMenu.style.left = `${rect.left}px`;
 
     contextMenu.querySelector('#editWord').addEventListener('click', () => {
-      this.editWord(wordId);
+      this.editWord(wordId, app);
       document.body.removeChild(contextMenu);
     });
 
     contextMenu.querySelector('#deleteWord').addEventListener('click', () => {
-      this.deleteWord(wordId);
+      this.deleteWord(wordId, app);
       document.body.removeChild(contextMenu);
     });
 
@@ -211,18 +209,18 @@ export const listPage = {
     });
   },
 
-  editWord(wordId) {
+  editWord(wordId, app) {
     app.currentWord = app.currentList.words.find(w => w.id === wordId);
     app.navigateTo('word');
   },
 
-  deleteWord(wordId) {
+  deleteWord(wordId, app) {
     if (confirm('Вы уверены, что хотите удалить это слово?')) {
       app.deleteWord(wordId);
     }
   },
 
-  updateCheckboxes(container) {
+  updateCheckboxes(container, app) {
     container.querySelectorAll('.selectItem').forEach(checkbox => {
       const wordId = parseInt(checkbox.dataset.id);
       const isSelected = app.selectedItems.some(item => item.id === wordId);

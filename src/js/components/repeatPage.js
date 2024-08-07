@@ -1,7 +1,5 @@
-import app from '../main.js';
-
 export const repeatPage = {
-  render() {
+  render(app) {
     const container = document.createElement('div');
     const currentWord = app.getCurrentWord();
     
@@ -14,7 +12,7 @@ export const repeatPage = {
         <p>Вы повторили все слова в этом списке.</p>
         <div id="errorContainer" class="error-container"></div>
       `;
-      this.setupListeners(container);
+      this.setupListeners(container, app);
       return container;
     }
     
@@ -35,11 +33,11 @@ export const repeatPage = {
       <div id="errorContainer" class="error-container"></div>
     `;
 
-    this.setupListeners(container);
+    this.setupListeners(container, app);
     return container;
   },
 
-  setupListeners(container) {
+  setupListeners(container, app) {
     container.querySelector('.back-button').addEventListener('click', async () => {
       try {
         await app.navigateTo('list');

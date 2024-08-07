@@ -3,20 +3,11 @@ import { listPage } from './components/listPage.js';
 import { wordPage } from './components/wordPage.js';
 import { repeatPage } from './components/repeatPage.js';
 import { 
-  // database, // database и auth закомментированы, но оставлены для потенциального будущего использования
-  // auth, // database и auth закомментированы, но оставлены для потенциального будущего использования
   saveUserData, 
   loadUserData, 
   authenticateAnonymously, 
-  FirebaseError,
-  // Следующие импорты можно раскомментировать, когда они понадобятся:
-  // ref,
-  // set,
-  // get,
-  // remove,
-  // update
-} from './firebase.js';
-import { ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+  FirebaseError
+} from './utils/firebase.js';
 
 const tg = window.Telegram?.WebApp || {
   initDataUnsafe: { user: { id: 'local_user' } },

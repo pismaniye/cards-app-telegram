@@ -1,7 +1,5 @@
-import app from '../main.js';
-
 export const wordPage = {
-  render() {
+  render(app) {
     const container = document.createElement('div');
     const word = app.currentWord;
     const isNewWord = !word || !word.id;
@@ -24,11 +22,11 @@ export const wordPage = {
       <div id="errorContainer" class="error-container"></div>
     `;
 
-    this.setupListeners(container);
+    this.setupListeners(container, app);
     return container;
   },
 
-  setupListeners(container) {
+  setupListeners(container, app) {
     container.querySelector('.back-button').addEventListener('click', async () => {
       if (confirm('Вы уверены, что хотите выйти без сохранения изменений?')) {
         try {

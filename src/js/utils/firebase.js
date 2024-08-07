@@ -1,17 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
 import { getDatabase, ref, set, get, remove, update } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 import { getAuth, signInAnonymously as firebaseSignInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDag5C32hnA_rsBLh9qJcq0im9wO9v7Cyo",
-  authDomain: "m-cards-bot.firebaseapp.com",
-  databaseURL: "https://m-cards-bot-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "m-cards-bot",
-  storageBucket: "m-cards-bot.appspot.com",
-  messagingSenderId: "367400626398",
-  appId: "1:367400626398:web:0fdd39817f4a62613dfa4f",
-  measurementId: "G-PR3VNXQ2LZ"
-};
+import { firebaseConfig } from '../firebase-config.js';
 
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
