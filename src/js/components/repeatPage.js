@@ -6,7 +6,7 @@ export const repeatPage = {
     if (!currentWord) {
       container.innerHTML = `
         <div class="header">
-          <button class="button back-button">Назад</button>
+          <button class="text-button nonselectable back-button">Назад</button>
           <h1>Повторение завершено</h1>
         </div>
         <p>Вы повторили все слова в этом списке.</p>
@@ -20,7 +20,7 @@ export const repeatPage = {
     
     container.innerHTML = `
       <div class="header">
-        <button class="button back-button">Назад</button>
+        <button class="text-button nonselectable back-button">Назад</button>
         <h1>Повторение</h1>
       </div>
       <div class="card">

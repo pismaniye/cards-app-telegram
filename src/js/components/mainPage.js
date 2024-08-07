@@ -3,11 +3,11 @@ export const mainPage = {
     const container = document.createElement('div');
     container.innerHTML = `
       <div class="header">
-        <h1>Списки</h1>
+        <h1 class="nonselectable">Списки</h1>
         ${app.isSelectMode ? `
-          <button class="text-button" id="backFromSelect">Готово</button>
+          <button class="text-button nonselectable" id="backFromSelect">Готово</button>
         ` : `
-          <button class="text-button" id="selectMode">Выбрать</button>
+          <button class="text-button nonselectable" id="selectMode">Выбрать</button>
         `}
       </div>
       <div class="card">
