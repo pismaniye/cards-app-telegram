@@ -158,11 +158,21 @@ export const listPage = {
     };
 
     li.addEventListener('touchstart', startLongPress);
-    li.addEventListener('touchend', endLongPress);
+    li.addEventListener('touchend', (e) => {
+      endLongPress();
+      if (isLongPress) {
+        e.preventDefault(); // Предотвращаем дальнейшие действия
+      }
+    });
     li.addEventListener('touchmove', endLongPress);
 
     li.addEventListener('mousedown', startLongPress);
-    li.addEventListener('mouseup', endLongPress);
+    li.addEventListener('mouseup', (e) => {
+      endLongPress();
+      if (isLongPress) {
+        e.preventDefault(); // Предотвращаем дальнейшие действия
+      }
+    });
     li.addEventListener('mouseleave', endLongPress);
 
     li.addEventListener('click', (e) => {
