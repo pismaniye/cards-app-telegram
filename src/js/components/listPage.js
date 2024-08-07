@@ -68,19 +68,15 @@ export const listPage = {
     if (!app.isSelectMode) {
       this.setupWordItemListeners(li, app);
     }
+    return li;
   },
 
   setupListeners(container, app) {
     const toggleSelectModeButton = container.querySelector('#selectMode, #backFromSelect');
     if (toggleSelectModeButton) {
       toggleSelectModeButton.addEventListener('click', () => {
-        if (app.isSelectMode) {
-          app.isSelectMode = false;
-          app.selectedItems = [];
-          app.renderPage();
-        } else {
-          app.toggleSelectMode();
-        }
+        app.toggleSelectMode();
+        app.renderPage();
       });
     }
 
@@ -98,7 +94,7 @@ export const listPage = {
           if (confirm('Вы уверены, что хотите удалить выбранные слова?')) {
             try {
               await app.deleteSelectedItems();
-              this.updateCheckboxes(container);
+              this.updateCheckboxes(container, app);
             } catch (error) {
               app.showError('Ошибка при удалении выбранных слов: ' + error.message);
             }
@@ -179,6 +175,13 @@ export const listPage = {
 
   showContextMenu(listItem, event, app) {
     event.preventDefault();
+    event.stopPropagation();
+
+    const existingMenu = document.querySelector('.context-menu');
+    if (existingMenu) {
+      existingMenu.remove();
+    }
+
     const wordId = parseInt(listItem.dataset.id);
     const contextMenu = document.createElement('div');
     contextMenu.className = 'context-menu';
@@ -195,18 +198,30 @@ export const listPage = {
 
     contextMenu.querySelector('#editWord').addEventListener('click', () => {
       this.editWord(wordId, app);
-      document.body.removeChild(contextMenu);
+      removeMenu();
     });
 
     contextMenu.querySelector('#deleteWord').addEventListener('click', () => {
       this.deleteWord(wordId, app);
-      document.body.removeChild(contextMenu);
+      removeMenu();
     });
 
-    document.addEventListener('click', function removeMenu() {
-      document.body.removeChild(contextMenu);
-      document.removeEventListener('click', removeMenu);
-    });
+    const removeMenu = () => {
+      if (contextMenu && contextMenu.parentNode) {
+        contextMenu.parentNode.removeChild(contextMenu);
+      }
+      document.removeEventListener('click', handleOutsideClick);
+    };
+
+    const handleOutsideClick = (e) => {
+      if (!contextMenu.contains(e.target)) {
+        removeMenu();
+      }
+    };
+
+    setTimeout(() => {
+      document.addEventListener('click', handleOutsideClick);
+    }, 0);
   },
 
   editWord(wordId, app) {

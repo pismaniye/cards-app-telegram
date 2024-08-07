@@ -48,11 +48,11 @@ export const mainPage = {
         ${!list.name ? `<input type="text" class="edit-list-name" placeholder="Введите название списка">` : ''}
       </div>
     `;
-    container.insertBefore(li, container.firstChild); // Вставляем новый элемент в начало списка
+    container.insertBefore(li, container.firstChild);
     if (!app.isSelectMode) {
       this.setupListItemListeners(li, app);
     }
-    return li;  // Возвращаем созданный элемент
+    return li;
   },
 
   setupListeners(container, app) {
@@ -180,6 +180,13 @@ export const mainPage = {
 
   showContextMenu(listItem, event, app) {
     event.preventDefault();
+    event.stopPropagation();
+
+    const existingMenu = document.querySelector('.context-menu');
+    if (existingMenu) {
+      existingMenu.remove();
+    }
+
     const listId = parseInt(listItem.dataset.id);
     const contextMenu = document.createElement('div');
     contextMenu.className = 'context-menu';
@@ -196,18 +203,30 @@ export const mainPage = {
 
     contextMenu.querySelector('#editList').addEventListener('click', () => {
       this.editList(listId, app);
-      document.body.removeChild(contextMenu);
+      removeMenu();
     });
 
     contextMenu.querySelector('#deleteList').addEventListener('click', () => {
       this.deleteList(listId, app);
-      document.body.removeChild(contextMenu);
+      removeMenu();
     });
 
-    document.addEventListener('click', function removeMenu() {
-      document.body.removeChild(contextMenu);
-      document.removeEventListener('click', removeMenu);
-    });
+    const removeMenu = () => {
+      if (contextMenu && contextMenu.parentNode) {
+        contextMenu.parentNode.removeChild(contextMenu);
+      }
+      document.removeEventListener('click', handleOutsideClick);
+    };
+
+    const handleOutsideClick = (e) => {
+      if (!contextMenu.contains(e.target)) {
+        removeMenu();
+      }
+    };
+
+    setTimeout(() => {
+      document.addEventListener('click', handleOutsideClick);
+    }, 0);
   },
 
   editList(listId, app) {
