@@ -71,56 +71,24 @@ export const mainPage = {
 
   setupListeners(container, app) {
     const listContainer = container.querySelector('#listContainer');
-    
-    let longPressTimer;
-    let longPressItem;
-
-    const handleLongPress = (e, item) => {
-      longPressTimer = setTimeout(() => {
-        this.showContextMenu(item, e, app);
-      }, 500);
-    };
-
-    const cancelLongPress = () => {
-      clearTimeout(longPressTimer);
-      longPressItem = null;
-    };
-
-    listContainer.addEventListener('mousedown', (e) => {
+  
+    listContainer.addEventListener('long-press', (e) => {
       const listItem = e.target.closest('.list-item');
       if (listItem) {
-        longPressItem = listItem;
-        handleLongPress(e, listItem);
+        e.preventDefault();
+        this.showContextMenu(listItem, e, app);
       }
     });
-
-    listContainer.addEventListener('mouseup', cancelLongPress);
-    listContainer.addEventListener('mouseleave', cancelLongPress);
-
-    listContainer.addEventListener('touchstart', (e) => {
-      const listItem = e.target.closest('.list-item');
-      if (listItem) {
-        longPressItem = listItem;
-        handleLongPress(e, listItem);
-      }
-    });
-
-    listContainer.addEventListener('touchend', cancelLongPress);
-    listContainer.addEventListener('touchmove', cancelLongPress);
-
+  
     listContainer.addEventListener('click', (e) => {
       const listItem = e.target.closest('.list-item');
-      if (listItem && listItem === longPressItem) {
-        e.preventDefault();
-        return;
-      }
-      if (listItem && !app.isSelectMode) {
+      if (listItem && !e.target.closest('.context-menu') && !app.isSelectMode) {
         const listId = parseInt(listItem.dataset.id);
         app.setCurrentList(listId);
         app.navigateTo('list');
       }
     });
-
+  
     const addListButton = container.querySelector('#addList');
     if (addListButton) {
       addListButton.addEventListener('click', () => {
@@ -133,21 +101,17 @@ export const mainPage = {
         }
       });
     }
-
+  
     const selectModeButton = container.querySelector('#selectMode');
     if (selectModeButton) {
-      selectModeButton.addEventListener('click', () => {
-        app.toggleSelectMode();
-      });
+      selectModeButton.addEventListener('click', () => app.toggleSelectMode());
     }
-
+  
     const backFromSelectButton = container.querySelector('#backFromSelect');
     if (backFromSelectButton) {
-      backFromSelectButton.addEventListener('click', () => {
-        app.toggleSelectMode();
-      });
+      backFromSelectButton.addEventListener('click', () => app.toggleSelectMode());
     }
-
+  
     if (app.isSelectMode) {
       const deleteSelectedButton = container.querySelector('#deleteSelected');
       if (deleteSelectedButton) {
@@ -161,21 +125,17 @@ export const mainPage = {
           }
         });
       }
-
+  
       const repeatSelectedButton = container.querySelector('#repeatSelected');
       if (repeatSelectedButton) {
-        repeatSelectedButton.addEventListener('click', () => {
-          app.startRepeatForSelectedItems();
-        });
+        repeatSelectedButton.addEventListener('click', () => app.startRepeatForSelectedItems());
       }
-
+  
       const repeatAllButton = container.querySelector('#repeatAll');
       if (repeatAllButton) {
-        repeatAllButton.addEventListener('click', () => {
-          this.startRepeatAll(app);
-        });
+        repeatAllButton.addEventListener('click', () => this.startRepeatAll(app));
       }
-
+  
       container.querySelectorAll('.selectItem').forEach(checkbox => {
         checkbox.addEventListener('change', (e) => {
           const listId = parseInt(e.target.dataset.id);

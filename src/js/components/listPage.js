@@ -87,55 +87,23 @@ export const listPage = {
 
   setupListeners(container, app) {
     const wordContainer = container.querySelector('#wordContainer');
-    
-    let longPressTimer;
-    let longPressItem;
-
-    const handleLongPress = (e, item) => {
-      longPressTimer = setTimeout(() => {
-        this.showContextMenu(item, e, app);
-      }, 500);
-    };
-
-    const cancelLongPress = () => {
-      clearTimeout(longPressTimer);
-      longPressItem = null;
-    };
-
-    wordContainer.addEventListener('mousedown', (e) => {
+  
+    wordContainer.addEventListener('long-press', (e) => {
       const wordItem = e.target.closest('.list-item');
       if (wordItem) {
-        longPressItem = wordItem;
-        handleLongPress(e, wordItem);
+        e.preventDefault();
+        this.showContextMenu(wordItem, e, app);
       }
     });
-
-    wordContainer.addEventListener('mouseup', cancelLongPress);
-    wordContainer.addEventListener('mouseleave', cancelLongPress);
-
-    wordContainer.addEventListener('touchstart', (e) => {
-      const wordItem = e.target.closest('.list-item');
-      if (wordItem) {
-        longPressItem = wordItem;
-        handleLongPress(e, wordItem);
-      }
-    });
-
-    wordContainer.addEventListener('touchend', cancelLongPress);
-    wordContainer.addEventListener('touchmove', cancelLongPress);
-
+  
     wordContainer.addEventListener('click', (e) => {
       const wordItem = e.target.closest('.list-item');
-      if (wordItem && wordItem === longPressItem) {
-        e.preventDefault();
-        return;
-      }
-      if (wordItem && !app.isSelectMode) {
+      if (wordItem && !e.target.closest('.context-menu') && !app.isSelectMode) {
         const wordId = parseInt(wordItem.dataset.id);
         this.editWord(wordId, app);
       }
     });
-
+  
     const toggleSelectModeButton = container.querySelector('#selectMode, #backFromSelect');
     if (toggleSelectModeButton) {
       toggleSelectModeButton.addEventListener('click', () => {
@@ -143,14 +111,12 @@ export const listPage = {
         app.renderPage();
       });
     }
-
+  
     const goToMainPageButton = container.querySelector('#goToMainPage');
     if (goToMainPageButton) {
-      goToMainPageButton.addEventListener('click', () => {
-        app.navigateTo('main');
-      });
+      goToMainPageButton.addEventListener('click', () => app.navigateTo('main'));
     }
-
+  
     if (app.isSelectMode) {
       const deleteSelectedButton = container.querySelector('#deleteSelected');
       if (deleteSelectedButton) {
@@ -165,14 +131,12 @@ export const listPage = {
           }
         });
       }
-
+  
       const repeatSelectedButton = container.querySelector('#repeatSelected');
       if (repeatSelectedButton) {
-        repeatSelectedButton.addEventListener('click', () => {
-          app.startRepeatForSelectedItems();
-        });
+        repeatSelectedButton.addEventListener('click', () => app.startRepeatForSelectedItems());
       }
-
+  
       container.querySelectorAll('.selectItem').forEach(checkbox => {
         checkbox.addEventListener('change', (e) => {
           const wordId = parseInt(e.target.dataset.id);
@@ -195,12 +159,10 @@ export const listPage = {
           }
         });
       }
-
+  
       const repeatAllButton = container.querySelector('#repeatAll');
       if (repeatAllButton) {
-        repeatAllButton.addEventListener('click', () => {
-          app.startRepeat(app.currentList.words);
-        });
+        repeatAllButton.addEventListener('click', () => app.startRepeat(app.currentList.words));
       }
     }
   },
