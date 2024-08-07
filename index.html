@@ -11,10 +11,18 @@
     <!-- Add Firebase products that you want to use -->
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js" type="module"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js" type="module"></script>
+    <script src="https://unpkg.com/long-press-event@2.4.4/dist/long-press-event.min.js"></script>
 </head>
 <body>
     <div id="app"></div>
+    <script type="module" src="src/index.js"></script>
     <div id="errorContainer" class="error-container"></div>
     <script type="module" src="src/index.js"></script>
+    <script>
+        // Настройка длительности длительного нажатия
+        if (window.longPress) {
+            window.longPress.duration = 500; // 500 мс
+        }
+    </script>
 </body>
 </html>

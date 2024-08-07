@@ -17,14 +17,20 @@ class App {
         this.currentRepeatIndex = 0;
         this.showingAnswer = false;
         this.repeatSettings = { side: '1', order: 'sequential' };
-        this.tg = getTelegramInstance();    }
+        this.tg = getTelegramInstance();
+        this.pageContainer = null; // Добавляем эту строку
+    }
 
     async init() {
         console.log("Initializing app...");
         try {
+            this.pageContainer = document.getElementById('app'); // Инициализируем pageContainer
+            if (!this.pageContainer) {
+                throw new Error('Page container not found');
+            }
             await authenticateAnonymously();
             await this.loadData();
-            this.renderPage();
+            await this.renderPage();
             this.setupTelegramBackButton();
             console.log("App initialized successfully");
         } catch (error) {
@@ -61,26 +67,38 @@ class App {
     }
 
     async renderPage() {
-        console.log(`Rendering page: ${this.currentPage}`);
-        const container = document.getElementById('app');
-        container.innerHTML = '';
-
-        switch (this.currentPage) {
-            case 'main':
-                container.appendChild(mainPage.render(this));
-                break;
-            case 'list':
-                container.appendChild(listPage.render(this));
-                break;
-            case 'word':
-                container.appendChild(wordPage.render(this));
-                break;
-            case 'repeat':
-                container.appendChild(repeatPage.render(this));
-                break;
+        console.log('Rendering page:', this.currentPage);
+        if (!this.pageContainer) {
+            console.error('Page container is not initialized');
+            return;
         }
+        this.pageContainer.innerHTML = '';
+        let pageContent;
 
-        this.updateSelectModeUI();
+        try {
+            switch (this.currentPage) {
+                case 'main':
+                    pageContent = await mainPage.render(this);
+                    break;
+                case 'list':
+                    pageContent = await listPage.render(this);
+                    break;
+                case 'word':
+                    pageContent = await wordPage.render(this);
+                    break;
+                case 'repeat':
+                    pageContent = await repeatPage.render(this);
+                    break;
+                default:
+                    console.error('Unknown page:', this.currentPage);
+                    return;
+            }
+
+            this.pageContainer.appendChild(pageContent);
+        } catch (error) {
+            console.error('Error rendering page:', error);
+            this.showError('Произошла ошибка при загрузке страницы');
+        }
     }
 
     toggleSelectMode() {
@@ -421,17 +439,19 @@ class App {
     }
 
     showError(message) {
-        const errorContainer = document.getElementById('errorContainer');
-        if (errorContainer) {
-            errorContainer.textContent = message;
-            errorContainer.style.display = 'block';
-            setTimeout(() => {
-                errorContainer.style.display = 'none';
-            }, 5000);
-        } else {
-            console.error('Элемент для отображения ошибок не найден');
-            alert(message);
+        console.error(message);
+        let errorContainer = document.getElementById('errorContainer');
+        if (!errorContainer) {
+            errorContainer = document.createElement('div');
+            errorContainer.id = 'errorContainer';
+            errorContainer.className = 'error-container';
+            document.body.appendChild(errorContainer);
         }
+        errorContainer.textContent = message;
+        errorContainer.style.display = 'block';
+        setTimeout(() => {
+            errorContainer.style.display = 'none';
+        }, 5000);
     }
 }
 

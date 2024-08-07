@@ -1,5 +1,5 @@
 export const mainPage = {
-  render(app) {
+  async render(app) {
     const container = document.createElement('div');
     container.innerHTML = `
       <div class="header">
@@ -26,9 +26,7 @@ export const mainPage = {
     `;
 
     const listContainer = container.querySelector('#listContainer');
-    app.lists.forEach(list => {
-      this.renderListItem(listContainer, list, app);
-    });
+    await this.renderListItems(listContainer, app);
 
     this.setupListeners(container, app);
     if (app.isSelectMode) {
@@ -37,7 +35,27 @@ export const mainPage = {
     return container;
   },
 
-  renderListItem(container, list, app) {
+  async renderListItems(container, app) {
+    const fragment = document.createDocumentFragment();
+    const chunkSize = 20;
+
+    for (let i = 0; i < app.lists.length; i += chunkSize) {
+      const chunk = app.lists.slice(i, i + chunkSize);
+      await new Promise(resolve => {
+        setTimeout(() => {
+          chunk.forEach(list => {
+            const li = this.renderListItem(list, app);
+            fragment.appendChild(li);
+          });
+          resolve();
+        }, 0);
+      });
+    }
+
+    container.appendChild(fragment);
+  },
+
+  renderListItem(list, app) {
     const li = document.createElement('li');
     li.className = 'list-item';
     li.dataset.id = list.id;
@@ -48,22 +66,67 @@ export const mainPage = {
         ${!list.name ? `<input type="text" class="edit-list-name" placeholder="Введите название списка">` : ''}
       </div>
     `;
-    container.insertBefore(li, container.firstChild);
-    if (!app.isSelectMode) {
-      this.setupListItemListeners(li, app);
-    }
     return li;
   },
 
   setupListeners(container, app) {
+    const listContainer = container.querySelector('#listContainer');
+    
+    let longPressTimer;
+    let longPressItem;
+
+    const handleLongPress = (e, item) => {
+      longPressTimer = setTimeout(() => {
+        this.showContextMenu(item, e, app);
+      }, 500);
+    };
+
+    const cancelLongPress = () => {
+      clearTimeout(longPressTimer);
+      longPressItem = null;
+    };
+
+    listContainer.addEventListener('mousedown', (e) => {
+      const listItem = e.target.closest('.list-item');
+      if (listItem) {
+        longPressItem = listItem;
+        handleLongPress(e, listItem);
+      }
+    });
+
+    listContainer.addEventListener('mouseup', cancelLongPress);
+    listContainer.addEventListener('mouseleave', cancelLongPress);
+
+    listContainer.addEventListener('touchstart', (e) => {
+      const listItem = e.target.closest('.list-item');
+      if (listItem) {
+        longPressItem = listItem;
+        handleLongPress(e, listItem);
+      }
+    });
+
+    listContainer.addEventListener('touchend', cancelLongPress);
+    listContainer.addEventListener('touchmove', cancelLongPress);
+
+    listContainer.addEventListener('click', (e) => {
+      const listItem = e.target.closest('.list-item');
+      if (listItem && listItem === longPressItem) {
+        e.preventDefault();
+        return;
+      }
+      if (listItem && !app.isSelectMode) {
+        const listId = parseInt(listItem.dataset.id);
+        app.setCurrentList(listId);
+        app.navigateTo('list');
+      }
+    });
+
     const addListButton = container.querySelector('#addList');
     if (addListButton) {
       addListButton.addEventListener('click', () => {
-        const listContainer = container.querySelector('#listContainer');
         const newList = { id: Date.now(), name: '' };
         app.lists.unshift(newList);
         const newListItem = this.renderListItem(listContainer, newList, app);
-        
         const editInput = newListItem.querySelector('.edit-list-name');
         if (editInput) {
           editInput.focus();
@@ -126,71 +189,8 @@ export const mainPage = {
     }
   },
 
-  setupListItemListeners(li, app) {
-    let longPressTimer;
-    let isLongPress = false;
-
-    const startLongPress = (e) => {
-      isLongPress = false;
-      longPressTimer = setTimeout(() => {
-        isLongPress = true;
-        this.showContextMenu(li, e, app);
-      }, 500);
-    };
-
-    const endLongPress = () => {
-      clearTimeout(longPressTimer);
-    };
-
-    li.addEventListener('touchstart', startLongPress);
-    li.addEventListener('touchend', (e) => {
-      endLongPress();
-      if (isLongPress) {
-        e.preventDefault(); // Предотвращаем дальнейшие действия
-      }
-    });
-    li.addEventListener('touchmove', endLongPress);
-
-    li.addEventListener('mousedown', startLongPress);
-    li.addEventListener('mouseup', (e) => {
-      endLongPress();
-      if (isLongPress) {
-        e.preventDefault(); // Предотвращаем дальнейшие действия
-      }
-    });
-    li.addEventListener('mouseleave', endLongPress);
-
-    li.addEventListener('click', (e) => {
-      if (!isLongPress && (!app.isSelectMode)) {
-        const listId = parseInt(li.dataset.id);
-        app.setCurrentList(listId);
-        app.navigateTo('list');
-      }
-    });
-
-    const editInput = li.querySelector('.edit-list-name');
-    if (editInput) {
-      editInput.addEventListener('blur', async () => {
-        const newName = editInput.value.trim();
-        if (newName) {
-          const listId = parseInt(li.dataset.id);
-          await app.updateList(listId, newName);
-          li.querySelector('.item-name').textContent = newName;
-          editInput.remove();
-        }
-      });
-
-      editInput.addEventListener('keypress', async (e) => {
-        if (e.key === 'Enter') {
-          editInput.blur();
-        }
-      });
-    }
-  },
-
   showContextMenu(listItem, event, app) {
     event.preventDefault();
-    event.stopPropagation();
 
     const existingMenu = document.querySelector('.context-menu');
     if (existingMenu) {
@@ -201,8 +201,8 @@ export const mainPage = {
     const contextMenu = document.createElement('div');
     contextMenu.className = 'context-menu';
     contextMenu.innerHTML = `
-      <div class="context-menu-item" id="editList">Редактировать</div>
-      <div class="context-menu-item" id="deleteList">Удалить</div>
+      <div class="context-menu-item" data-action="edit">Редактировать</div>
+      <div class="context-menu-item" data-action="delete">Удалить</div>
     `;
 
     document.body.appendChild(contextMenu);
@@ -211,32 +211,21 @@ export const mainPage = {
     contextMenu.style.top = `${rect.bottom}px`;
     contextMenu.style.left = `${rect.left}px`;
 
-    contextMenu.querySelector('#editList').addEventListener('click', () => {
-      this.editList(listId, app);
-      removeMenu();
-    });
-
-    contextMenu.querySelector('#deleteList').addEventListener('click', () => {
-      this.deleteList(listId, app);
-      removeMenu();
-    });
-
-    const removeMenu = () => {
-      if (contextMenu && contextMenu.parentNode) {
-        contextMenu.parentNode.removeChild(contextMenu);
+    contextMenu.addEventListener('click', (e) => {
+      const action = e.target.dataset.action;
+      if (action === 'edit') {
+        this.editList(listId, app);
+      } else if (action === 'delete') {
+        this.deleteList(listId, app);
       }
-      document.removeEventListener('click', handleOutsideClick);
-    };
+      contextMenu.remove();
+    });
 
-    const handleOutsideClick = (e) => {
+    document.addEventListener('click', (e) => {
       if (!contextMenu.contains(e.target)) {
-        removeMenu();
+        contextMenu.remove();
       }
-    };
-
-    setTimeout(() => {
-      document.addEventListener('click', handleOutsideClick);
-    }, 0);
+    }, { once: true });
   },
 
   editList(listId, app) {

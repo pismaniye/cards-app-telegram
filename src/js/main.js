@@ -74,27 +74,35 @@ const app = {
   },
 
   async renderPage() {
-    console.log(`Rendering page: ${this.currentPage}`);
-    const container = document.getElementById('app');
-    container.innerHTML = '';
+    console.log('Rendering page:', this.currentPage);
+    this.pageContainer.innerHTML = '';
+    let pageContent;
 
-    switch (this.currentPage) {
-      case 'main':
-        container.appendChild(mainPage.render());
-        break;
-      case 'list':
-        container.appendChild(listPage.render());
-        break;
-      case 'word':
-        container.appendChild(wordPage.render());
-        break;
-        case 'repeat':
-          container.appendChild(repeatPage.render());
+    try {
+      switch (this.currentPage) {
+        case 'main':
+          pageContent = await mainPage.render(this);
           break;
+        case 'list':
+          pageContent = await listPage.render(this);
+          break;
+        case 'word':
+          pageContent = await wordPage.render(this);
+          break;
+        case 'repeat':
+          pageContent = await repeatPage.render(this);
+          break;
+        default:
+          console.error('Unknown page:', this.currentPage);
+          return;
       }
-  
-      this.updateSelectModeUI();
-    },
+
+      this.pageContainer.appendChild(pageContent);
+    } catch (error) {
+      console.error('Error rendering page:', error);
+      this.showError('Произошла ошибка при загрузке страницы');
+    }
+  },
 
   toggleSelectMode() {
     console.log(`Переключение режима выбора. Текущее состояние: ${this.isSelectMode}`);

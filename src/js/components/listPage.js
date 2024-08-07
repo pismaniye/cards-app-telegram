@@ -1,5 +1,5 @@
 export const listPage = {
-  render(app) {
+  async render(app) {
     if (!app.currentList) {
       console.error('Текущий список не определен');
       app.navigateTo('main');
@@ -38,9 +38,7 @@ export const listPage = {
       if (app.currentList.words.length === 0) {
         wordContainer.innerHTML = '<li>Список пуст. Добавьте новые слова.</li>';
       } else {
-        app.currentList.words.forEach(word => {
-          this.renderWordItem(wordContainer, word, app);
-        });
+        await this.renderWordItems(wordContainer, app);
       }
     } else {
       console.error('app.currentList.words is not an array:', app.currentList.words);
@@ -54,7 +52,27 @@ export const listPage = {
     return container;
   },
 
-  renderWordItem(container, word, app) {
+  async renderWordItems(container, app) {
+    const fragment = document.createDocumentFragment();
+    const chunkSize = 20;
+
+    for (let i = 0; i < app.currentList.words.length; i += chunkSize) {
+      const chunk = app.currentList.words.slice(i, i + chunkSize);
+      await new Promise(resolve => {
+        setTimeout(() => {
+          chunk.forEach(word => {
+            const li = this.renderWordItem(word, app);
+            fragment.appendChild(li);
+          });
+          resolve();
+        }, 0);
+      });
+    }
+
+    container.appendChild(fragment);
+  },
+
+  renderWordItem(word, app) {
     const li = document.createElement('li');
     li.className = 'list-item';
     li.dataset.id = word.id;
@@ -64,14 +82,60 @@ export const listPage = {
         <span class="item-name nonselectable">${word.side1} - ${word.side2}</span>
       </div>
     `;
-    container.appendChild(li);
-    if (!app.isSelectMode) {
-      this.setupWordItemListeners(li, app);
-    }
     return li;
   },
 
   setupListeners(container, app) {
+    const wordContainer = container.querySelector('#wordContainer');
+    
+    let longPressTimer;
+    let longPressItem;
+
+    const handleLongPress = (e, item) => {
+      longPressTimer = setTimeout(() => {
+        this.showContextMenu(item, e, app);
+      }, 500);
+    };
+
+    const cancelLongPress = () => {
+      clearTimeout(longPressTimer);
+      longPressItem = null;
+    };
+
+    wordContainer.addEventListener('mousedown', (e) => {
+      const wordItem = e.target.closest('.list-item');
+      if (wordItem) {
+        longPressItem = wordItem;
+        handleLongPress(e, wordItem);
+      }
+    });
+
+    wordContainer.addEventListener('mouseup', cancelLongPress);
+    wordContainer.addEventListener('mouseleave', cancelLongPress);
+
+    wordContainer.addEventListener('touchstart', (e) => {
+      const wordItem = e.target.closest('.list-item');
+      if (wordItem) {
+        longPressItem = wordItem;
+        handleLongPress(e, wordItem);
+      }
+    });
+
+    wordContainer.addEventListener('touchend', cancelLongPress);
+    wordContainer.addEventListener('touchmove', cancelLongPress);
+
+    wordContainer.addEventListener('click', (e) => {
+      const wordItem = e.target.closest('.list-item');
+      if (wordItem && wordItem === longPressItem) {
+        e.preventDefault();
+        return;
+      }
+      if (wordItem && !app.isSelectMode) {
+        const wordId = parseInt(wordItem.dataset.id);
+        this.editWord(wordId, app);
+      }
+    });
+
     const toggleSelectModeButton = container.querySelector('#selectMode, #backFromSelect');
     if (toggleSelectModeButton) {
       toggleSelectModeButton.addEventListener('click', () => {
@@ -141,97 +205,43 @@ export const listPage = {
     }
   },
 
-  setupWordItemListeners(li, app) {
-    let longPressTimer;
-    let isLongPress = false;
-
-    const startLongPress = (e) => {
-      isLongPress = false;
-      longPressTimer = setTimeout(() => {
-        isLongPress = true;
-        this.showContextMenu(li, e, app);
-      }, 500);
-    };
-
-    const endLongPress = () => {
-      clearTimeout(longPressTimer);
-    };
-
-    li.addEventListener('touchstart', startLongPress);
-    li.addEventListener('touchend', (e) => {
-      endLongPress();
-      if (isLongPress) {
-        e.preventDefault(); // Предотвращаем дальнейшие действия
-      }
-    });
-    li.addEventListener('touchmove', endLongPress);
-
-    li.addEventListener('mousedown', startLongPress);
-    li.addEventListener('mouseup', (e) => {
-      endLongPress();
-      if (isLongPress) {
-        e.preventDefault(); // Предотвращаем дальнейшие действия
-      }
-    });
-    li.addEventListener('mouseleave', endLongPress);
-
-    li.addEventListener('click', (e) => {
-      if (!isLongPress) {
-        const wordId = parseInt(li.dataset.id);
-        this.editWord(wordId, app);
-      }
-    });
-  },
-
-  showContextMenu(listItem, event, app) {
+  showContextMenu(wordItem, event, app) {
     event.preventDefault();
-    event.stopPropagation();
 
     const existingMenu = document.querySelector('.context-menu');
     if (existingMenu) {
       existingMenu.remove();
     }
 
-    const wordId = parseInt(listItem.dataset.id);
+    const wordId = parseInt(wordItem.dataset.id);
     const contextMenu = document.createElement('div');
     contextMenu.className = 'context-menu';
     contextMenu.innerHTML = `
-      <div class="context-menu-item" id="editWord">Редактировать</div>
-      <div class="context-menu-item" id="deleteWord">Удалить</div>
+      <div class="context-menu-item" data-action="edit">Редактировать</div>
+      <div class="context-menu-item" data-action="delete">Удалить</div>
     `;
 
     document.body.appendChild(contextMenu);
 
-    const rect = listItem.getBoundingClientRect();
+    const rect = wordItem.getBoundingClientRect();
     contextMenu.style.top = `${rect.bottom}px`;
     contextMenu.style.left = `${rect.left}px`;
 
-    contextMenu.querySelector('#editWord').addEventListener('click', () => {
-      this.editWord(wordId, app);
-      removeMenu();
-    });
-
-    contextMenu.querySelector('#deleteWord').addEventListener('click', () => {
-      this.deleteWord(wordId, app);
-      removeMenu();
-    });
-
-    const removeMenu = () => {
-      if (contextMenu && contextMenu.parentNode) {
-        contextMenu.parentNode.removeChild(contextMenu);
+    contextMenu.addEventListener('click', (e) => {
+      const action = e.target.dataset.action;
+      if (action === 'edit') {
+        this.editWord(wordId, app);
+      } else if (action === 'delete') {
+        this.deleteWord(wordId, app);
       }
-      document.removeEventListener('click', handleOutsideClick);
-    };
+      contextMenu.remove();
+    });
 
-    const handleOutsideClick = (e) => {
+    document.addEventListener('click', (e) => {
       if (!contextMenu.contains(e.target)) {
-        removeMenu();
+        contextMenu.remove();
       }
-    };
-
-    setTimeout(() => {
-      document.addEventListener('click', handleOutsideClick);
-    }, 0);
+    }, { once: true });
   },
 
   editWord(wordId, app) {
